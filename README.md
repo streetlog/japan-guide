@@ -1,5 +1,8 @@
 # 🇯🇵 @streetlog.kr 올인원 일본 여행·쇼핑 가이드 — 공개 버전 (잠금 없음)
 
+> **라이브 주소 (GitHub Pages):** <https://streetlog.github.io/japan-guide/>
+> `main` 브랜치에 커밋하면 1~2분 뒤 자동으로 반영됩니다. (Settings → Pages: Deploy from a branch / `main` / `(root)`)
+
 누구나 링크만 열면 바로 쓰는 버전입니다. 비밀번호·보안 장치가 없어서 **배포가 가장 쉽습니다.**
 (비밀번호 잠금 + 데이터 숨김 + 복제 방지가 필요한 경우 `streetlog-japan-guide-protected` 를 쓰세요.)
 
