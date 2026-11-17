@@ -564,7 +564,8 @@
   }
 
   var LS_KEY = "streetlog.list.v1";
-  var PAGE = 12;              // 한 번에 보여줄 카드 수
+  var PAGE = 12;              // 처음에 보여줄 카드 수
+  var MORE = 24;              // '더 보기'를 누를 때마다 추가로 보여줄 카드 수
   var SITE_INFO = (typeof SITE === "object" && SITE) ? SITE : {};
 
   var state = {
@@ -851,13 +852,15 @@
     var thumb = it.img
       ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.ko) + ' 장소 이미지" width="72" height="72" loading="lazy" decoding="async">'
       : "";
+    /* 한국어 이름이 없는 곳은 제목과 일본어명이 같아서 부제를 숨깁니다 */
+    var ja = (it.ja && it.ja !== it.ko) ? '<p class="ja">' + esc(it.ja) + "</p>" : "";
     return '' +
       '<article class="card' + (inList ? " in-list" : "") + '" data-card="' + esc(it.id) + '">' +
         '<div class="shop-head">' + thumb +
           '<div class="shop-head-txt">' +
             '<div class="badges"><span class="b region">' + esc(it.region) + "</span></div>" +
             "<h3>" + esc(it.ko) + "</h3>" +
-            '<p class="ja">' + esc(it.ja) + "</p>" +
+            ja +
           "</div>" +
         "</div>" +
         '<p class="tip">' + esc(it.tip) + "</p>" +
@@ -909,7 +912,12 @@
 
     var unit = isPlacesTab() ? "곳" : "개 상품";
     $("resultCount").textContent = "총 " + items.length + unit;
-    $("moreWrap").classList.toggle("show", items.length > state.shown);
+    var more = items.length > state.shown;
+    $("moreWrap").classList.toggle("show", more);
+    if (more) {
+      $("moreBtn").textContent = "더 보기 " + Math.min(MORE, items.length - state.shown) + unit + " · 남은 " +
+        (items.length - state.shown).toLocaleString("ko-KR") + unit;
+    }
 
     var inListCount = Object.keys(isPlacesTab() ? state.list.travel : state.list.shopping).length;
     $("listHint").textContent = inListCount ? "담은 " + inListCount + (isPlacesTab() ? "곳" : "개") : "";
@@ -1144,7 +1152,7 @@
   });
 
   $("moreBtn").addEventListener("click", function () {
-    state.shown += PAGE;
+    state.shown += MORE;
     renderGrid();
   });
 

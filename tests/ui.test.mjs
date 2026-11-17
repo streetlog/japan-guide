@@ -25,6 +25,9 @@ const { PLACES, REGIONS, SHOPPING } = new Function(
 const countType = (type) => PLACES.filter((p) => p.type === type).length;
 const FOOD = countType("맛집");
 const byId = (id) => PLACES.filter((p) => p.id === id)[0];
+const DOKUSHIMA_FOOD = PLACES.filter((p) => p.type === "맛집" && p.region === "도쿠시마").length;
+const PAGE = 12;
+const MORE = 24;
 
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8")
   // <script src="data.js"> 를 인라인으로 바꿔 파일 로딩 없이 같은 조건으로 실행
@@ -96,7 +99,7 @@ check(`지역 필터 ${REGIONS.length}개`, document.querySelectorAll("#pills .p
   String(document.querySelectorAll("#pills .pill").length));
 check("필터 순서 = REGIONS", [...document.querySelectorAll("#pills .pill")].map((b) => b.getAttribute("data-filter")).join(",") === REGIONS.join(","),
   [...document.querySelectorAll("#pills .pill")].map((b) => b.getAttribute("data-filter")).join(","));
-check("도쿠시마 필터 개수 4", /도쿠시마\s*4/.test(text("#pills")), text("#pills").replace(/\s+/g, " "));
+check(`도쿠시마 필터 개수 ${DOKUSHIMA_FOOD}`, new RegExp("도쿠시마\\s*" + DOKUSHIMA_FOOD + "(?!\\d)").test(text("#pills")), text("#pills").replace(/\s+/g, " ").slice(0, 200));
 check("첫 카드 = 데이터 첫 항목", $("[data-card]").getAttribute("data-card") === PLACES.filter((p) => p.type === "맛집")[0].id);
 check("첫 카드 일본어명 표기", $("[data-card]").textContent.includes(PLACES[0].ja));
 check("지도 버튼 href", $('[data-card] a.btn').getAttribute("href").startsWith("https://www.google.com/maps/search/?api=1&query="));
@@ -104,15 +107,17 @@ check("배너는 여행 탭에서 숨김", $("#banner").hidden === true);
 
 console.log("\n[2] 필터 / 검색");
 $('#pills [data-filter="도쿠시마"]').click();
-check("도쿠시마 맛집 4곳", text("#resultCount") === "총 4곳", text("#resultCount"));
-check("도쿠시마 카드 4장", cards().length === 4, String(cards().length));
+check(`도쿠시마 맛집 ${DOKUSHIMA_FOOD}곳`, text("#resultCount") === `총 ${DOKUSHIMA_FOOD}곳`, text("#resultCount"));
+check(`도쿠시마 카드 ${Math.min(PAGE, DOKUSHIMA_FOOD)}장(첫 페이지)`, cards().length === Math.min(PAGE, DOKUSHIMA_FOOD), String(cards().length));
 $('#pills [data-filter="전체"]').click();
 const q = $("#q");
 q.value = "라멘";
 q.dispatchEvent(new window.Event("input", { bubbles: true }));
 await sleep(200);
+const ramenTotal = Number(text("#resultCount").replace(/[^\d]/g, ""));
 const ramenCount = cards().length;
-check("검색 '라멘' 결과 있음", ramenCount > 0 && ramenCount < 12, `카드 ${ramenCount}`);
+check("검색 '라멘' 결과 있음", ramenTotal > 0 && ramenTotal < FOOD, `총 ${ramenTotal}곳 · 카드 ${ramenCount}`);
+check("검색 결과도 첫 페이지 12장까지", ramenCount === Math.min(PAGE, ramenTotal), `카드 ${ramenCount}`);
 q.value = "존재하지않는검색어";
 q.dispatchEvent(new window.Event("input", { bubbles: true }));
 await sleep(200);
@@ -121,10 +126,32 @@ $("#clearQ").click();
 await sleep(50);
 check("검색어 지우면 복귀", document.querySelectorAll("#grid [data-card]").length === 12);
 
-console.log("\n[3] 더 보기");
+console.log("\n[3] 더 보기 (한 번에 24곳씩 추가)");
+/* 전체 맛집 2,017곳을 다 클릭하면 느리므로, 작은 필터(도쿠시마 맛집)로
+   '더 보기'가 모든 항목을 도달하게 하는지 확인하고
+   전체 탭의 총 개수는 resultCount 로 따로 확인합니다 */
+$('#pills [data-filter="도쿠시마"]').click();
+await sleep(60);
+check(`도쿠시마 맛집 첫 페이지 ${Math.min(PAGE, DOKUSHIMA_FOOD)}장`, cards().length === Math.min(PAGE, DOKUSHIMA_FOOD), String(cards().length));
+check("더 보기 버튼에 남은 개수 표시", /남은\s*\d/.test(text("#moreBtn")), text("#moreBtn"));
+check("더 보기 버튼 표시", $("#moreWrap").classList.contains("show"));
 let guard = 0;
-while ($("#moreBtn") && !$("#moreBtn").hidden && guard++ < 10) { $("#moreBtn").click(); }
-check(`더 보기 후 맛집 ${FOOD}장 전부`, cards().length === FOOD, `실제 ${cards().length}`);
+let grew = true;
+while ($("#moreWrap").classList.contains("show") && guard++ < 40) {
+  const before = cards().length;
+  $("#moreBtn").click();
+  await sleep(10);
+  if (cards().length <= before) { grew = false; break; }
+  if (cards().length > before + MORE) { grew = false; break; }
+}
+check(`더 보기 후 도쿠시마 맛집 ${DOKUSHIMA_FOOD}장 전부`, cards().length === DOKUSHIMA_FOOD, `실제 ${cards().length} · 클릭 ${guard}회`);
+check("더 보기는 24장씩 늘어남", grew);
+$("#tabFood").click();
+$('#pills [data-filter="전체"]').click();
+await sleep(60);
+check(`맛집 탭 총 ${FOOD}곳 · 첫 페이지 12장`, text("#resultCount") === `총 ${FOOD}곳` && cards().length === PAGE,
+  `${text("#resultCount")} / ${cards().length}장`);
+check("큰 목록에서도 더 보기 남은 수 표시", /남은\s*[\d,]+/.test(text("#moreBtn")), text("#moreBtn"));
 
 console.log("\n[4] 하단 바 — 쇼핑 / 여행 코스 분리");
 check("처음 쇼핑 0개 · ¥0", text("#shopBarTitle") === "쇼핑 0개" && text("#shopBarSub") === "약 ¥0", `${text("#shopBarTitle")} / ${text("#shopBarSub")}`);
@@ -258,11 +285,46 @@ $("#clearCourse").click();
 check("코스 비우면 0곳", text("#courseBarTitle") === "여행 코스 0곳" && ls().start === "", text("#courseBarTitle"));
 check("코스 모달 빈 상태", $("#courseBody").textContent.includes("아직 담은 장소가 없어요"));
 
-console.log("\n[12] 장소 카드 썸네일");
-check("모든 장소에 img 필드(상대 경로)", PLACES.every((p) => p.img === `./images/places/${p.id}.jpg`),
-  PLACES.filter((p) => p.img !== `./images/places/${p.id}.jpg`).map((p) => p.id).join(","));
-check("장소 이미지 " + PLACES.length + "장 모두 파일 존재", PLACES.every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
-  PLACES.filter((p) => !fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))).map((p) => p.id).join(","));
+console.log("\n[12] 장소 카드 썸네일 — 개별 158+37장 유지 · 신규는 카테고리 대표 6종");
+const CAT = ["cat-food", "cat-cafe", "cat-spot", "cat-hotel", "cat-shop", "cat-photo"];
+const isExistingImg = (p) => /^\.[/]images[/]places[/][a-z]+-\d+\.jpg$/.test(p.img);
+check("기존 장소 img = ./images/places/{id}.jpg", PLACES.filter(isExistingImg).every((p) => p.img === `./images/places/${p.id}.jpg`),
+  PLACES.filter(isExistingImg).filter((p) => p.img !== `./images/places/${p.id}.jpg`).map((p) => p.id).join(","));
+check("기존 개별 이미지 195장", PLACES.filter(isExistingImg).length === 195, String(PLACES.filter(isExistingImg).length));
+check(`신규 ${PLACES.length - 195}곳은 cat-*.jpg`, PLACES.filter((p) => !isExistingImg(p)).every((p) => p.img === `./images/cat/${CAT.filter((c) => p.img.endsWith(c + ".jpg"))[0]}.jpg`),
+  PLACES.filter((p) => !isExistingImg(p) && !CAT.some((c) => p.img === `./images/cat/${c}.jpg`)).map((p) => p.id).join(","));
+check("기존 195장 파일 모두 존재(그대로 유지)", PLACES.filter(isExistingImg).every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
+  PLACES.filter((p) => isExistingImg(p) && !fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))).map((p) => p.id).join(","));
+check("카테고리 대표 6종 파일 존재", CAT.every((c) => fs.existsSync(path.join(root, "images", "cat", c + ".jpg"))),
+  CAT.filter((c) => !fs.existsSync(path.join(root, "images", "cat", c + ".jpg"))).join(","));
+check("대표 이미지는 400×400 JPEG", (() => {
+  for (const c of CAT) {
+    const buf = fs.readFileSync(path.join(root, "images", "cat", c + ".jpg"));
+    if (buf[0] !== 0xff || buf[1] !== 0xd8) return false;
+    // SOF0~SOF2 마커에서 크기 추출
+    let i = 2, len = 0, h = 0, w = 0, ok = false;
+    while (i < buf.length) {
+      if (buf[i] !== 0xff) { i++; continue; }
+      const m = buf[i + 1];
+      len = (buf[i + 2] << 8) | buf[i + 3];
+      if (m >= 0xc0 && m <= 0xc2) { h = (buf[i + 5] << 8) | buf[i + 6]; w = (buf[i + 7] << 8) | buf[i + 8]; ok = true; break; }
+      i += 2 + len;
+    }
+    if (!ok || w !== 400 || h !== 400) return false;
+  }
+  return true;
+})());
+check("[소품샵] 태그는 cat-shop", PLACES.filter((p) => p.tip.startsWith("[소품샵]")).length > 0 &&
+  PLACES.filter((p) => p.tip.startsWith("[소품샵]")).every((p) => p.img === "./images/cat/cat-shop.jpg"),
+  PLACES.filter((p) => p.tip.startsWith("[소품샵]") && p.img !== "./images/cat/cat-shop.jpg").map((p) => p.id).join(","));
+check("[포토스팟] 태그는 cat-photo", PLACES.filter((p) => p.tip.startsWith("[포토스팟]")).length > 0 &&
+  PLACES.filter((p) => p.tip.startsWith("[포토스팟]")).every((p) => p.img === "./images/cat/cat-photo.jpg"),
+  PLACES.filter((p) => p.tip.startsWith("[포토스팟]") && p.img !== "./images/cat/cat-photo.jpg").map((p) => p.id).join(","));
+check("신규는 타입별 대표 이미지", ["맛집:cat-food", "카페:cat-cafe", "명소:cat-spot", "호텔:cat-hotel"].every((pair) => {
+  const [t, c] = pair.split(":");
+  const list = PLACES.filter((p) => !isExistingImg(p) && p.type === t && !p.tip.startsWith("[소품샵]") && !p.tip.startsWith("[포토스팟]"));
+  return list.length > 0 && list.every((p) => p.img === `./images/cat/${c}.jpg`);
+}));
 for (const [tab, label, type] of [["tabFood", "맛집", "맛집"], ["tabCafe", "카페", "카페"], ["tabSight", "관광지", "명소"], ["tabHotel", "호텔", "호텔"], ["tabTransit", "공항·역", "공항·역"]]) {
   $("#" + tab).click();
   const all = $("#pills [data-filter=\"전체\"]");
@@ -271,7 +333,7 @@ for (const [tab, label, type] of [["tabFood", "맛집", "맛집"], ["tabCafe", "
   const list = [...cards()];
   const imgs = list.map((c) => c.querySelector("img.thumb"));
   check(`${label} 탭 카드마다 썸네일`, list.length > 0 && imgs.every((i) => i !== null), `카드 ${list.length}장`);
-  check(`${label} 썸네일 src = 이미지 경로`, list.every((c, i) => imgs[i] && imgs[i].getAttribute("src") === `./images/places/${c.getAttribute("data-card")}.jpg`),
+  check(`${label} 썸네일 src = 데이터의 img`, list.every((c, i) => imgs[i] && imgs[i].getAttribute("src") === byId(c.getAttribute("data-card")).img),
     (imgs[0] || {}).getAttribute && imgs[0].getAttribute("src"));
   check(`${label} 썸네일 alt 에 장소명`, imgs[0] && imgs[0].getAttribute("alt").length > 4, String(imgs[0] && imgs[0].getAttribute("alt")));
 }
@@ -342,6 +404,61 @@ check("공항 출발 구글 지도 루트 URL", /^https:\/\/www\.google\.com\/ma
   const origin = u.searchParams.get("origin").split(",").map(Number);
   check("origin = 나리타 공항 좌표", Math.abs(origin[0] - byId("tr-01").lat) < 1e-4 && Math.abs(origin[1] - byId("tr-01").lng) < 1e-4,
     `${origin} vs ${byId("tr-01").lat},${byId("tr-01").lng}`);
+}
+
+console.log("\n[13-1] 신규 장소(카테고리 대표 이미지) — 코스 담기 · 최단 동선 · 루트");
+while (courseRows().length) courseRows()[0].querySelector(".del").click();
+document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+$("#tabFood").click();
+const allPill = $('#pills [data-filter="전체"]');
+if (allPill && allPill.getAttribute("aria-pressed") !== "true") allPill.click();
+await sleep(80);
+{
+  const catCards = [...cards()].filter((c) => byId(c.getAttribute("data-card")).img === "./images/cat/cat-food.jpg");
+  check("맛집 첫 페이지에 신규 장소(대표 이미지) 카드 있음", catCards.length > 0, `카드 ${cards().length}장 중 ${catCards.length}장`);
+  const first = catCards[0];
+  const firstId = first.getAttribute("data-card");
+  check("신규 카드 썸네일 = ./images/cat/cat-food.jpg", first.querySelector("img.thumb").getAttribute("src") === "./images/cat/cat-food.jpg",
+    first.querySelector("img.thumb").getAttribute("src"));
+  check("신규 카드도 일본어 복사 버튼·지도 링크 존재", first.querySelector('[data-act="copy"]') !== null && first.querySelector("a.btn") !== null);
+  const secondId = catCards[1] ? catCards[1].getAttribute("data-card") : null;
+  first.querySelector('[data-act="add"]').click();
+  if (secondId) document.querySelector(`[data-card="${secondId}"] [data-act="add"]`).click();
+  check("신규 장소 담기 → 코스에 저장", text("#courseBarTitle") === `여행 코스 ${secondId ? 2 : 1}곳`, text("#courseBarTitle"));
+  check("신규 장소 좌표도 저장", typeof ls().travel[firstId].lat === "number" && Math.abs(ls().travel[firstId].lat - byId(firstId).lat) < 1e-9);
+  $("#courseBar").click();
+  check("코스 모달에 신규 장소 표시", $("#courseBody").textContent.includes(byId(firstId).ko), byId(firstId).ko);
+  if (secondId) {
+    check("신규 2곳 최단 동선 계산", num(text("#courseTotal")) > 0 && /^약 [\d.]+km$/.test(text("#courseTotal")), text("#courseTotal"));
+    const opt = bestPath(firstId, [firstId, secondId]);
+    check("신규 2곳 동선 = 두 좌표 거리", Math.abs(num(text("#courseTotal")) - opt.total) < 0.15,
+      `${text("#courseTotal")} vs ${opt.total.toFixed(1)}km`);
+    $("#routeOpen").click();
+    check("신규 장소 구글 지도 루트 열기", /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&origin=[\d.]+,[\d.]+&destination=[\d.]+,[\d.]+$/.test(opened || ""), String(opened));
+  }
+  while (courseRows().length) courseRows()[0].querySelector(".del").click();
+  document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+}
+{
+  $("#tabSight").click();
+  const sightAll = $('#pills [data-filter="전체"]');
+  if (sightAll && sightAll.getAttribute("aria-pressed") !== "true") sightAll.click();
+  await sleep(80);
+  const qq = $("#q");
+  qq.value = "[소품샵]";
+  qq.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await sleep(200);
+  const list = [...cards()];
+  check("[소품샵] 검색 결과는 cat-shop 썸네일", list.length > 0 && list.every((c) => c.querySelector("img.thumb").getAttribute("src") === "./images/cat/cat-shop.jpg"),
+    `카드 ${list.length}장`);
+  qq.value = "[포토스팟]";
+  qq.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await sleep(200);
+  const list2 = [...cards()];
+  check("[포토스팟] 검색 결과는 cat-photo 썸네일", list2.length > 0 && list2.every((c) => c.querySelector("img.thumb").getAttribute("src") === "./images/cat/cat-photo.jpg"),
+    `카드 ${list2.length}장`);
+  $("#clearQ").click();
+  await sleep(80);
 }
 
 console.log("\n[14] 콘솔 오류");
