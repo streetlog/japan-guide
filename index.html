@@ -148,8 +148,13 @@
   .pills {
     display: flex; gap: 7px; overflow-x: auto; padding: 1px 0 8px;
     scrollbar-width: none; -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch; scroll-padding-inline: 2px;
   }
   .pills::-webkit-scrollbar { display: none; }
+  /* 넓은 화면에서는 칩을 두 줄로 펼쳐 전부 보이게 (모바일은 가로 스크롤) */
+  @media (min-width: 720px) {
+    .pills { flex-wrap: wrap; overflow-x: visible; row-gap: 7px; }
+  }
   .pill {
     flex: 0 0 auto; border: 1px solid var(--line); background: #fff;
     color: #3f3f46; border-radius: 999px; padding: 8px 13px;
