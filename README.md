@@ -21,6 +21,7 @@ streetlog-japan-guide-open/
 ├─ index.html      ← 화면 (CSS·JS 내장, 수정 거의 불필요)
 ├─ data.js         ← ★ 내용 수정은 여기서만 (장소·쇼핑 아이템·문구)
 ├─ images/shop/    ← 쇼핑 상품 썸네일 sp-01.jpg ~ sp-12.jpg (400×400 JPEG)
+├─ images/places/  ← 장소 썸네일 {id}.jpg 158장 (400×400 JPEG, 맛집·카페·관광지·호텔)
 └─ tests/
    └─ ui.test.mjs  ← 동작 자동 점검 (선택)
 ```
@@ -43,6 +44,7 @@ streetlog-japan-guide-open/
 - `map` : **지도 열기** 검색어 (비우면 `ja` 로 검색)
 - `lat` · `lng` : 위도·경도. **여행 코스 최단 동선과 구글 지도 루트**에 쓰입니다. 구글 지도에서 장소를 우클릭하면 나오는 좌표를 그대로 넣으면 되고, 없으면 코스에서 `위치 정보 없음` 으로 표시되며 동선 계산에서 빠집니다.
 - `id` : 겹치지만 않으면 됨 (`tk-10`, `ty-04` …)
+- `img` : 카드 썸네일 경로. 지금은 158곳 모두 `"./images/places/{id}.jpg"` 로 들어가 있습니다. 새 장소를 추가할 때 같은 이름의 400×400 JPEG 을 `images/places/` 에 두고 `img: "./images/places/tk-10.jpg"` 를 넣으면 카드 왼쪽에 72×72 썸네일로 나옵니다. 없으면 썸네일 없이 표시됩니다.
 
 **쇼핑 아이템 추가** — `SHOPPING` 배열 맨 아래에 한 줄:
 

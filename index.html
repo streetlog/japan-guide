@@ -847,11 +847,18 @@
 
   function travelCard(it) {
     var inList = !!state.list.travel[it.id];
+    var thumb = it.img
+      ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.ko) + ' 장소 이미지" width="72" height="72" loading="lazy" decoding="async">'
+      : "";
     return '' +
       '<article class="card' + (inList ? " in-list" : "") + '" data-card="' + esc(it.id) + '">' +
-        '<div class="badges"><span class="b region">' + esc(it.region) + "</span></div>" +
-        "<h3>" + esc(it.ko) + "</h3>" +
-        '<p class="ja">' + esc(it.ja) + "</p>" +
+        '<div class="shop-head">' + thumb +
+          '<div class="shop-head-txt">' +
+            '<div class="badges"><span class="b region">' + esc(it.region) + "</span></div>" +
+            "<h3>" + esc(it.ko) + "</h3>" +
+            '<p class="ja">' + esc(it.ja) + "</p>" +
+          "</div>" +
+        "</div>" +
         '<p class="tip">' + esc(it.tip) + "</p>" +
         '<div class="acts">' +
           '<button class="btn" type="button" data-act="copy" data-ja="' + esc(it.ja) + '">일본어 복사</button>' +
