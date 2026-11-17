@@ -285,24 +285,27 @@ $("#clearCourse").click();
 check("코스 비우면 0곳", text("#courseBarTitle") === "여행 코스 0곳" && ls().start === "", text("#courseBarTitle"));
 check("코스 모달 빈 상태", $("#courseBody").textContent.includes("아직 담은 장소가 없어요"));
 
-console.log("\n[12] 장소 카드 썸네일 — 기존 195장 유지 · 신규 2,918곳은 사진 없는 텍스트 카드");
-const isExistingImg = (p) => /^\.[/]images[/]places[/][a-z]+-\d+\.jpg$/.test(p.img);
-const NEW_N = PLACES.length - 195;
+console.log("\n[12] 장소 카드 썸네일 — 기존 195장 + 인기 300장 = 495장 · 나머지 2,618곳은 사진 없는 텍스트 카드");
+const IMG_N = 495;
+const TEXT_N = PLACES.length - IMG_N;
+const isPlaceImg = (p) => /^\.[/]images[/]places[/][a-z]+-\d+\.jpg$/.test(p.img);
 $("#tabFood").click();
 {
   const all = $('#pills [data-filter="전체"]');
   if (all && all.getAttribute("aria-pressed") !== "true") all.click();
 }
 await sleep(80);
-check("기존 장소 img = ./images/places/{id}.jpg", PLACES.filter(isExistingImg).every((p) => p.img === `./images/places/${p.id}.jpg`),
-  PLACES.filter(isExistingImg).filter((p) => p.img !== `./images/places/${p.id}.jpg`).map((p) => p.id).join(","));
-check("기존 개별 이미지 195장", PLACES.filter(isExistingImg).length === 195, String(PLACES.filter(isExistingImg).length));
-check(`신규 ${NEW_N}곳은 img === ""`, PLACES.filter((p) => !isExistingImg(p)).every((p) => p.img === ""),
-  PLACES.filter((p) => !isExistingImg(p) && p.img !== "").map((p) => `${p.id}:${p.img}`).slice(0, 5).join(","));
+check("사진 있는 장소 img = ./images/places/{id}.jpg", PLACES.filter(isPlaceImg).every((p) => p.img === `./images/places/${p.id}.jpg`),
+  PLACES.filter(isPlaceImg).filter((p) => p.img !== `./images/places/${p.id}.jpg`).map((p) => p.id).join(","));
+check(`개별 이미지 ${IMG_N}장(기존 195 + 신규 인기 300)`, PLACES.filter(isPlaceImg).length === IMG_N, String(PLACES.filter(isPlaceImg).length));
+check(`나머지 ${TEXT_N}곳은 img === ""`, PLACES.filter((p) => !p.img).length === TEXT_N && PLACES.filter((p) => !isPlaceImg(p)).every((p) => p.img === ""),
+  PLACES.filter((p) => !isPlaceImg(p) && p.img !== "").map((p) => `${p.id}:${p.img}`).slice(0, 5).join(","));
 check("카테고리 대표 이미지(cat-*) 참조 0건", PLACES.every((p) => !/cat-/.test(p.img)),
   PLACES.filter((p) => /cat-/.test(p.img)).map((p) => p.id).slice(0, 5).join(","));
-check("기존 195장 파일 모두 존재(그대로 유지)", PLACES.filter(isExistingImg).every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
-  PLACES.filter((p) => isExistingImg(p) && !fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))).map((p) => p.id).join(","));
+check(`이미지 ${IMG_N}장 파일 모두 존재`, PLACES.filter((p) => p.img).every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
+  PLACES.filter((p) => p.img && !fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))).map((p) => p.id).join(","));
+check("images/places 폴더에 정확히 495장", fs.readdirSync(path.join(root, "images", "places")).filter((f) => f.endsWith(".jpg")).length === IMG_N,
+  String(fs.readdirSync(path.join(root, "images", "places")).filter((f) => f.endsWith(".jpg")).length));
 check("images/cat 폴더 정리됨", !fs.existsSync(path.join(root, "images", "cat")));
 
 /* 카드 렌더 — 사진 있는 카드는 썸네일, 없는 카드는 빈 박스 없이 텍스트만 */
@@ -469,14 +472,18 @@ await sleep(80);
   qq.dispatchEvent(new window.Event("input", { bubbles: true }));
   await sleep(200);
   const list = [...cards()];
-  check("[소품샵] 검색 결과도 사진 없는 텍스트 카드", list.length > 0 && list.every((c) => c.querySelector("img") === null && c.classList.contains("no-img")),
-    `카드 ${list.length}장`);
+  check("[소품샵] 검색 결과 — 사진 있는 곳은 썸네일, 없으면 텍스트 카드", list.length > 0 && list.every((c) => {
+    const p = byId(c.getAttribute("data-card"));
+    return p.img ? !!c.querySelector("img.thumb") : (c.querySelector("img") === null && c.classList.contains("no-img"));
+  }), `카드 ${list.length}장 · 사진 ${list.filter((c) => byId(c.getAttribute("data-card")).img).length}장`);
   qq.value = "[포토스팟]";
   qq.dispatchEvent(new window.Event("input", { bubbles: true }));
   await sleep(200);
   const list2 = [...cards()];
-  check("[포토스팟] 검색 결과도 사진 없는 텍스트 카드", list2.length > 0 && list2.every((c) => c.querySelector("img") === null && c.classList.contains("no-img")),
-    `카드 ${list2.length}장`);
+  check("[포토스팟] 검색 결과 — 사진 있는 곳은 썸네일, 없으면 텍스트 카드", list2.length > 0 && list2.every((c) => {
+    const p = byId(c.getAttribute("data-card"));
+    return p.img ? !!c.querySelector("img.thumb") : (c.querySelector("img") === null && c.classList.contains("no-img"));
+  }), `카드 ${list2.length}장 · 사진 ${list2.filter((c) => byId(c.getAttribute("data-card")).img).length}장`);
   $("#clearQ").click();
   await sleep(80);
 }
