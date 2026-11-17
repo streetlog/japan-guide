@@ -250,29 +250,38 @@
   footer .note { margin: 13px auto 0; max-width: 520px; font-size: 11.5px; color: var(--muted); line-height: 1.55; }
   footer .copy { margin: 12px 0 0; font-size: 11.5px; color: #a1a1aa; }
 
-  /* ---------- 하단 고정 바 ---------- */
-  .listbar {
+  /* ---------- 하단 고정 바 (쇼핑 / 여행 코스 분리) ---------- */
+  .dock {
     position: fixed; z-index: 50;
     left: 50%; transform: translateX(-50%);
     bottom: calc(12px + env(safe-area-inset-bottom));
-    width: min(520px, calc(100% - 24px));
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    width: min(560px, calc(100% - 24px));
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
     background: rgba(24, 24, 27, .96);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    color: #fff; border: 0; border-radius: 16px;
-    padding: 12px 15px; text-align: left;
+    border-radius: 16px; padding: 6px;
     box-shadow: 0 12px 28px rgba(24, 24, 27, .26);
   }
-  .listbar .left { display: flex; align-items: center; gap: 9px; min-width: 0; }
-  .listbar .dot {
-    flex: 0 0 auto; min-width: 21px; height: 21px; padding: 0 6px;
-    border-radius: 999px; background: #faf9f6; color: var(--ink);
-    font-size: 11.5px; font-weight: 800;
-    display: inline-flex; align-items: center; justify-content: center;
+  .dock-btn {
+    display: flex; align-items: center; gap: 8px; min-width: 0;
+    border: 0; border-radius: 12px; padding: 9px 11px; text-align: left;
+    background: rgba(255, 255, 255, .07); color: #fff;
+    transition: background .14s ease;
   }
-  .listbar .t { display: block; font-size: 13px; font-weight: 800; line-height: 1.25; }
-  .listbar .s { display: block; font-size: 11px; color: rgba(255, 255, 255, .55); font-weight: 600; line-height: 1.25; }
-  .listbar .right { font-size: 13px; font-weight: 800; letter-spacing: -.01em; }
+  .dock-btn:hover { background: rgba(255, 255, 255, .14); }
+  .dock-btn:focus-visible { outline: 2px solid #faf9f6; outline-offset: 1px; }
+  .dock-btn .ico { flex: 0 0 auto; font-size: 15px; line-height: 1; }
+  .dock-btn .txt { display: block; min-width: 0; }
+  .dock-btn .t {
+    display: block; font-size: 12.5px; font-weight: 800; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dock-btn .s {
+    display: block; font-size: 11px; font-weight: 700; line-height: 1.25;
+    color: rgba(255, 255, 255, .58);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dock-btn.empty { opacity: .62; }
 
   /* ---------- 내 리스트 모달 ---------- */
   .sheet { position: fixed; inset: 0; z-index: 60; display: none; }
@@ -348,6 +357,39 @@
     color: #c4c4c8; font-size: 15px; line-height: 1; border-radius: 7px;
   }
   .row .del:hover { color: #ef4444; background: #fef2f2; }
+
+  /* ---------- 여행 코스(동선) 행 ---------- */
+  .route-row { align-items: flex-start; cursor: pointer; }
+  .route-row:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .route-row.start { border-color: #c7c4bb; box-shadow: 0 0 0 2px rgba(24, 24, 27, .06); }
+  .route-row .ord {
+    flex: 0 0 auto; width: 24px; height: 24px; border-radius: 999px;
+    background: #f4f4f5; color: #52525b;
+    font-size: 11.5px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .route-row.start .ord { background: var(--ink); color: #fff; }
+  .route-row .info b { white-space: normal; }
+  .route-row .leg {
+    display: block; margin-top: 3px;
+    font-size: 11px; font-weight: 700; color: var(--ink-soft);
+  }
+  .route-row.start .leg { color: var(--ink); }
+  .route-row .chk { margin-top: 1px; }
+  .course-note {
+    margin: 2px 2px 12px; font-size: 11.5px; line-height: 1.5; color: var(--muted);
+  }
+  .route-btn {
+    width: 100%; padding: 13px; border: 0; border-radius: 13px;
+    background: var(--ink); color: #fff; font-size: 14px; font-weight: 800;
+  }
+  .route-btn:disabled { opacity: .45; }
+  .link-btn {
+    display: block; width: 100%; margin-top: 4px; padding: 8px;
+    border: 0; background: transparent; color: var(--muted);
+    font-size: 12px; font-weight: 700;
+  }
+  .link-btn:hover { color: #ef4444; text-decoration: underline; }
   .panel-foot {
     border-top: 1px solid var(--line); padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
     background: #fff;
@@ -435,37 +477,65 @@
   </div>
 </footer>
 
-<button class="listbar" id="listbar" type="button" aria-haspopup="dialog" aria-controls="sheet">
-  <span class="left">
-    <span class="dot" id="barCount">0</span>
-    <span>
-      <span class="t">내 리스트</span>
-      <span class="s" id="barSub">여행 0 · 쇼핑 0</span>
+<div class="dock" id="dock">
+  <button class="dock-btn" id="shopBar" type="button" aria-haspopup="dialog" aria-controls="shopSheet">
+    <span class="ico" aria-hidden="true">🛍️</span>
+    <span class="txt">
+      <span class="t" id="shopBarTitle">쇼핑 0개</span>
+      <span class="s" id="shopBarSub">약 ¥0</span>
     </span>
-  </span>
-  <span class="right" id="barTotal">약 ¥0</span>
-</button>
+  </button>
+  <button class="dock-btn" id="courseBar" type="button" aria-haspopup="dialog" aria-controls="courseSheet">
+    <span class="ico" aria-hidden="true">📍</span>
+    <span class="txt">
+      <span class="t" id="courseBarTitle">여행 코스 0곳</span>
+      <span class="s" id="courseBarSub">루트 보기</span>
+    </span>
+  </button>
+</div>
 
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+<div class="sheet" id="shopSheet" role="dialog" aria-modal="true" aria-labelledby="shopTitle" hidden>
   <div class="backdrop" data-close="1"></div>
   <div class="panel">
     <div class="panel-head">
       <div>
-        <h2 id="sheetTitle">내 리스트</h2>
-        <p>이 기기에만 저장돼요. 여행지·매장에서 하나씩 체크하세요.</p>
+        <h2 id="shopTitle">🛍️ 쇼핑 리스트</h2>
+        <p>이 기기에만 저장돼요. 수량과 구매 여부를 체크하세요.</p>
       </div>
       <button class="x" type="button" data-close="1" aria-label="닫기">✕</button>
     </div>
-    <div class="panel-body" id="sheetBody"></div>
+    <div class="panel-body" id="shopBody"></div>
     <div class="panel-foot">
       <div class="totals">
-        <span class="k">쇼핑 예상 총액</span>
-        <span class="v" id="sheetTotal">약 ¥0</span>
+        <span class="k" id="shopCount">쇼핑 예상 총액</span>
+        <span class="v" id="shopTotal">약 ¥0</span>
       </div>
       <div class="foot-btns">
-        <button type="button" id="clearAll">전체 초기화</button>
+        <button type="button" id="clearShopping">쇼핑 전체 비우기</button>
         <button type="button" class="primary" data-close="1">닫기</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="courseSheet" role="dialog" aria-modal="true" aria-labelledby="courseTitle" hidden>
+  <div class="backdrop" data-close="1"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2 id="courseTitle">📍 내 여행 코스</h2>
+        <p>최단 동선으로 자동 정렬했어요. 장소를 탭하면 출발지가 바뀝니다.</p>
+      </div>
+      <button class="x" type="button" data-close="1" aria-label="닫기">✕</button>
+    </div>
+    <div class="panel-body" id="courseBody"></div>
+    <div class="panel-foot">
+      <div class="totals">
+        <span class="k">총 이동 거리</span>
+        <span class="v" id="courseTotal">2곳부터 계산</span>
+      </div>
+      <button class="route-btn" type="button" id="routeOpen">🗺️ 구글 지도로 루트 열기</button>
+      <button class="link-btn" type="button" id="clearCourse">코스 전체 비우기</button>
     </div>
   </div>
 </div>
@@ -507,8 +577,27 @@
   /* ------------------------------------------------------------------
      1. 저장소
      ------------------------------------------------------------------ */
+  function placeById(id) {
+    for (var i = 0; i < PLACES.length; i++) if (PLACES[i].id === id) return PLACES[i];
+    return null;
+  }
+
+  /* 예전에 담아둔 장소에는 좌표가 없을 수 있어서, 데이터에서 채워 넣습니다 */
+  function hydrateTravel(list) {
+    Object.keys(list.travel).forEach(function (id) {
+      var row = list.travel[id];
+      var p = placeById(id);
+      if (!row || !p) return;
+      if (!isFinite(Number(row.lat)) || !isFinite(Number(row.lng))) { row.lat = p.lat; row.lng = p.lng; }
+      if (!row.ko) row.ko = p.ko;
+      if (!row.ja) row.ja = p.ja;
+      if (!row.region) row.region = p.region;
+      if (!row.type) row.type = p.type;
+    });
+  }
+
   function loadList() {
-    var base = { travel: {}, shopping: {} };
+    var base = { travel: {}, shopping: {}, start: "" };
     try {
       var raw = localStorage.getItem(LS_KEY);
       if (!raw) return base;
@@ -516,8 +605,11 @@
       if (parsed && typeof parsed === "object") {
         base.travel = parsed.travel && typeof parsed.travel === "object" ? parsed.travel : {};
         base.shopping = parsed.shopping && typeof parsed.shopping === "object" ? parsed.shopping : {};
+        base.start = typeof parsed.start === "string" ? parsed.start : "";
       }
     } catch (e) { /* 저장소를 못 쓰면 빈 리스트로 시작 */ }
+    hydrateTravel(base);
+    if (base.start && !base.travel[base.start]) base.start = "";
     return base;
   }
   function saveList() {
@@ -541,6 +633,110 @@
   }
   function mapsUrl(q) {
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+  }
+
+  /* ---------- 좌표 · 거리 · 최단 동선 ---------- */
+  var TO_RAD = Math.PI / 180;
+  function coordOf(row) {
+    var lat = Number(row && row.lat), lng = Number(row && row.lng);
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    if (lat === 0 && lng === 0) return null;
+    return { lat: lat, lng: lng };
+  }
+  function kmBetween(a, b) {
+    var dLat = (b.lat - a.lat) * TO_RAD;
+    var dLng = (b.lng - a.lng) * TO_RAD;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(a.lat * TO_RAD) * Math.cos(b.lat * TO_RAD) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  function kmText(km) {
+    if (!isFinite(km) || km < 0) return "-";
+    if (km >= 1000) return "약 " + Math.round(km).toLocaleString("ko-KR") + "km";
+    return "약 " + km.toFixed(1) + "km";
+  }
+
+  function travelIds() { return Object.keys(state.list.travel); }
+
+  /* 담은 장소를 출발지에서 가장 가까운 순서로 잇고(NN), 꼬인 구간을 펴서(2-opt) 최단 동선을 만듭니다 */
+  function buildCourse() {
+    var pts = [], missing = [];
+    travelIds().forEach(function (id) {
+      var c = coordOf(state.list.travel[id]);
+      if (c) pts.push({ id: id, c: c }); else missing.push(id);
+    });
+
+    var rows = [], total = 0, n = pts.length, i, j;
+    if (n > 0) {
+      var d = [];
+      for (i = 0; i < n; i++) {
+        d.push([]);
+        for (j = 0; j < n; j++) d[i].push(i === j ? 0 : kmBetween(pts[i].c, pts[j].c));
+      }
+      var start = 0;
+      for (i = 0; i < n; i++) if (pts[i].id === state.list.start) { start = i; break; }
+
+      /* 1) 출발지에서 가장 가까운 곳을 차례로 (Nearest Neighbor) */
+      var used = [], order = [start];
+      used[start] = true;
+      while (order.length < n) {
+        var last = order[order.length - 1], best = -1, bestD = Infinity;
+        for (j = 0; j < n; j++) {
+          if (used[j]) continue;
+          var dist = d[last][j];
+          if (dist < bestD - 1e-9) { bestD = dist; best = j; }
+        }
+        if (best < 0) break;
+        order.push(best);
+        used[best] = true;
+      }
+
+      /* 2) 출발지는 고정한 채 교차하는 구간을 펴기 (2-opt) */
+      var improved = true, guard = 0;
+      while (improved && guard++ < 40) {
+        improved = false;
+        for (i = 1; i < n - 1; i++) {
+          for (j = i + 1; j < n; j++) {
+            var a = order[i - 1], b = order[i], c = order[j];
+            var e = j + 1 < n ? order[j + 1] : -1;
+            var delta = d[a][c] - d[a][b] - (e >= 0 ? d[c][e] - d[b][e] : 0);
+            if (delta < -1e-9) {
+              order = order.slice(0, i).concat(order.slice(i, j + 1).reverse(), order.slice(j + 1));
+              improved = true;
+            }
+          }
+        }
+      }
+
+      for (i = 0; i < order.length; i++) {
+        var leg = i === 0 ? null : d[order[i - 1]][order[i]];
+        if (i > 0) total += leg;
+        rows.push({ id: pts[order[i]].id, leg: leg });
+      }
+    }
+    missing.forEach(function (id) { rows.push({ id: id, leg: null }); });
+    return { rows: rows, total: total, located: n };
+  }
+
+  /* 구글 지도 다중 경유지 URL — origin(1번) → waypoints → destination(마지막) */
+  function mapsRouteUrl(course) {
+    var pts = [];
+    course.rows.forEach(function (r) {
+      var c = coordOf(state.list.travel[r.id]);
+      if (c) pts.push(c);
+    });
+    if (!pts.length) return "";
+    var base = "https://www.google.com/maps/dir/?api=1";
+    if (pts.length === 1) return base + "&destination=" + pts[0].lat + "," + pts[0].lng;
+    /* 구글 지도 링크는 출발지 + 경유지 9곳 + 도착지 = 11곳까지 안정적으로 열립니다 */
+    var capped = pts.slice(0, 11);
+    var origin = capped[0], dest = capped[capped.length - 1];
+    var url = base + "&origin=" + origin.lat + "," + origin.lng +
+      "&destination=" + dest.lat + "," + dest.lng;
+    var wp = capped.slice(1, capped.length - 1).map(function (p) { return p.lat + "," + p.lng; }).join("|");
+    if (wp) url += "&waypoints=" + wp;
+    return url;
   }
 
   var toastTimer = null;
@@ -712,47 +908,37 @@
   }
 
   /* ------------------------------------------------------------------
-     5. 내 리스트 (하단 바 + 모달)
+     5. 쇼핑 리스트 · 여행 코스 (하단 바 + 전용 모달)
      ------------------------------------------------------------------ */
-  function listTotals() {
-    var travelIds = Object.keys(state.list.travel);
-    var shopIds = Object.keys(state.list.shopping);
-    var amount = 0;
-    shopIds.forEach(function (id) {
+  function shoppingTotals() {
+    var ids = Object.keys(state.list.shopping), amount = 0, qty = 0;
+    ids.forEach(function (id) {
       var row = state.list.shopping[id];
+      var q = Math.max(1, Number(row.qty) || 1);
+      qty += q;
       var price = Number(row.price);
-      if (isFinite(price)) amount += price * (row.qty || 1);
+      if (isFinite(price)) amount += price * q;
     });
-    return {
-      travel: travelIds.length,
-      shopping: shopIds.length,
-      total: travelIds.length + shopIds.length,
-      amount: amount
-    };
+    return { count: ids.length, qty: qty, amount: amount };
   }
 
-  function renderBar() {
-    var t = listTotals();
-    $("barCount").textContent = String(t.total);
-    $("barSub").textContent = "장소 " + t.travel + " · 쇼핑 " + t.shopping;
-    $("barTotal").textContent = "약 ¥" + t.amount.toLocaleString("ko-KR");
+  function renderDock() {
+    var shop = shoppingTotals();
+    var course = buildCourse();
+    $("shopBarTitle").textContent = "쇼핑 " + shop.count + "개";
+    $("shopBarSub").textContent = "약 ¥" + shop.amount.toLocaleString("ko-KR");
+    $("courseBarTitle").textContent = "여행 코스 " + travelIds().length + "곳";
+    $("courseBarSub").textContent = course.located > 1 ? "루트 · " + kmText(course.total) : "루트 보기";
+    $("shopBar").classList.toggle("empty", !shop.count);
+    $("courseBar").classList.toggle("empty", !travelIds().length);
   }
 
-  function travelRow(id) {
-    var row = state.list.travel[id];
-    return '' +
-      '<div class="row' + (row.checked ? " on" : "") + '" data-row="travel:' + esc(id) + '">' +
-        '<label class="chk"><input type="checkbox" data-chk="1"' + (row.checked ? " checked" : "") + '><i>✓</i></label>' +
-        '<span class="info"><b>' + esc(row.ko) + "</b><small>" + esc(row.region) + (row.type ? " · " + esc(row.type) : "") + " · " + esc(row.ja) + "</small></span>" +
-        '<button class="del" type="button" data-del="1" aria-label="삭제">✕</button>' +
-      "</div>";
-  }
-
+  /* ---------- 쇼핑 모달 ---------- */
   function shoppingRow(id) {
     var row = state.list.shopping[id];
     return '' +
       '<div class="row' + (row.checked ? " on" : "") + '" data-row="shopping:' + esc(id) + '">' +
-        '<label class="chk"><input type="checkbox" data-chk="1"' + (row.checked ? " checked" : "") + '><i>✓</i></label>' +
+        '<label class="chk"><input type="checkbox" data-chk="1"' + (row.checked ? " checked" : "") + ' aria-label="구매 완료"><i>✓</i></label>' +
         '<span class="info"><b>' + esc(row.name) + "</b><small>" + yen(row.price) + " · " + esc(row.ja) + "</small></span>" +
         '<span class="qty">' +
           '<button type="button" data-step="-1" aria-label="수량 줄이기">−</button>' +
@@ -763,51 +949,95 @@
       "</div>";
   }
 
-  function renderSheet() {
-    var travelIds = Object.keys(state.list.travel);
-    var shopIds = Object.keys(state.list.shopping);
-    var html = "";
-
-    html += '<div class="grp"><div class="grp-head">📍 담은 장소 <span>' + travelIds.length + "곳</span></div>";
-    html += travelIds.length
-      ? travelIds.map(travelRow).join("")
-      : '<p class="muted-empty">아직 담은 장소가 없어요. 맛집·카페·관광지·호텔 탭에서 ＋ 담기를 눌러보세요.</p>';
-    html += "</div>";
-
-    html += '<div class="grp"><div class="grp-head">🛒 쇼핑 리스트 <span>' + shopIds.length + "개</span></div>";
-    html += shopIds.length
-      ? shopIds.map(shoppingRow).join("")
+  function renderShop() {
+    var ids = Object.keys(state.list.shopping);
+    var t = shoppingTotals();
+    $("shopBody").innerHTML = ids.length
+      ? ids.map(shoppingRow).join("")
       : '<p class="muted-empty">아직 담은 상품이 없어요. 쇼핑리스트 탭에서 ＋ 담기를 눌러보세요.</p>';
-    html += "</div>";
-
-    $("sheetBody").innerHTML = html;
-    $("sheetTotal").textContent = "약 ¥" + listTotals().amount.toLocaleString("ko-KR");
+    $("shopTitle").textContent = "🛍️ 쇼핑 리스트" + (ids.length ? " " + ids.length + "개" : "");
+    $("shopCount").textContent = ids.length ? "쇼핑 " + t.count + "종 · " + t.qty + "개" : "쇼핑 예상 총액";
+    $("shopTotal").textContent = "약 ¥" + t.amount.toLocaleString("ko-KR");
   }
 
-  function openSheet() {
-    var sheet = $("sheet");
+  /* ---------- 여행 코스 모달 ---------- */
+  function courseRow(row, index, course) {
+    var entry = state.list.travel[row.id];
+    var isStart = index === 0 && course.located > 0;
+    var leg;
+    if (isStart) leg = "🚩 출발지";
+    else if (row.leg == null) leg = "위치 정보 없음 — 동선에서 빠짐";
+    else leg = "이전 곳에서 " + kmText(row.leg);
+    return '' +
+      '<div class="row route-row' + (isStart ? " start" : "") + (entry.checked ? " on" : "") + '" data-row="travel:' + esc(row.id) + '"' +
+        ' role="button" tabindex="0" aria-label="' + esc(entry.ko) + (isStart ? " · 출발지" : " · 출발지로 지정") + '">' +
+        '<span class="ord">' + (index + 1) + "</span>" +
+        '<span class="info"><b>' + esc(entry.ko) + "</b><small>" + esc(entry.region) +
+          (entry.type ? " · " + esc(entry.type) : "") + " · " + esc(entry.ja) + "</small>" +
+          '<span class="leg">' + esc(leg) + "</span></span>" +
+        '<label class="chk"><input type="checkbox" data-chk="1" aria-label="방문 완료"' + (entry.checked ? " checked" : "") + '><i>✓</i></label>' +
+        '<button class="del" type="button" data-del="1" aria-label="삭제">✕</button>' +
+      "</div>";
+  }
+
+  function renderCourse() {
+    var course = buildCourse();
+    var count = travelIds().length;
+    var html;
+    if (!count) {
+      html = '<p class="muted-empty">아직 담은 장소가 없어요. 맛집·카페·관광지·호텔 탭에서 ＋ 담기를 눌러보세요.</p>';
+    } else {
+      html = course.rows.map(function (r, i) { return courseRow(r, i, course); }).join("");
+      if (course.located === 1) {
+        html += '<p class="course-note">2곳 이상 담으면 최단 동선과 구간별 거리를 계산해요.</p>';
+      } else if (course.located > 1) {
+        html += '<p class="course-note">장소를 탭하면 그곳을 1번 출발지로 다시 계산해요.</p>';
+      }
+      if (course.rows.length > course.located) {
+        html += '<p class="course-note">좌표가 없는 장소 ' + (course.rows.length - course.located) + "곳은 동선 계산에서 빠졌어요.</p>";
+      }
+    }
+    $("courseBody").innerHTML = html;
+    $("courseTitle").textContent = "📍 내 여행 코스" + (count ? " " + count + "곳" : "");
+    $("courseTotal").textContent = course.located > 1 ? kmText(course.total) : "2곳부터 계산";
+    $("routeOpen").disabled = course.located === 0;
+  }
+
+  /* ---------- 모달 열기 / 닫기 ---------- */
+  function openSheet(kind) {
+    closeSheet();
+    var sheet = $(kind === "shop" ? "shopSheet" : "courseSheet");
     sheet.hidden = false;
     sheet.classList.add("open");
     document.body.style.overflow = "hidden";
     $("toast").classList.add("top");
-    renderSheet();
-    var closeBtn = sheet.querySelector(".panel-head .x");
-    if (closeBtn) closeBtn.focus();
+    if (kind === "shop") renderShop(); else renderCourse();
+    var btn = sheet.querySelector(".panel-head .x");
+    if (btn) btn.focus();
   }
   function closeSheet() {
-    var sheet = $("sheet");
-    sheet.classList.remove("open");
-    sheet.hidden = true;
+    ["shopSheet", "courseSheet"].forEach(function (id) {
+      var sheet = $(id);
+      if (!sheet.classList.contains("open")) return;
+      sheet.classList.remove("open");
+      sheet.hidden = true;
+    });
     document.body.style.overflow = "";
     $("toast").classList.remove("top");
-    $("listbar").focus();
+  }
+  function openSheetId() {
+    if ($("shopSheet").classList.contains("open")) return "shopSheet";
+    if ($("courseSheet").classList.contains("open")) return "courseSheet";
+    return "";
   }
 
   function refreshListViews() {
     saveList();
-    renderBar();
+    renderDock();
     renderGrid();
-    if ($("sheet").classList.contains("open")) renderSheet();
+    var open = openSheetId();
+    if (open === "shopSheet") renderShop();
+    else if (open === "courseSheet") renderCourse();
   }
 
   /* ------------------------------------------------------------------
@@ -815,11 +1045,14 @@
      ------------------------------------------------------------------ */
   function addItem(id) {
     if (isPlacesTab()) {
-      var place = PLACES.filter(function (p) { return p.id === id; })[0];
+      var place = placeById(id);
       if (!place) return;
       if (state.list.travel[id]) { toast("이미 담겨 있어요"); return; }
-      state.list.travel[id] = { id: id, ko: place.ko, ja: place.ja, region: place.region, type: place.type, checked: false };
-      toast("여행 리스트에 담았어요");
+      state.list.travel[id] = {
+        id: id, ko: place.ko, ja: place.ja, region: place.region, type: place.type,
+        lat: place.lat, lng: place.lng, checked: false
+      };
+      toast("여행 코스에 담았어요");
     } else {
       var item = SHOPPING.filter(function (p) { return p.id === id; })[0];
       if (!item) return;
@@ -836,8 +1069,16 @@
 
   function removeItem(group, id) {
     delete state.list[group][id];
+    if (group === "travel" && state.list.start === id) state.list.start = "";
     refreshListViews();
-    toast("리스트에서 뺐어요");
+    toast(group === "travel" ? "코스에서 뺐어요" : "쇼핑 리스트에서 뺐어요");
+  }
+
+  function setStart(id) {
+    if (!state.list.travel[id] || state.list.start === id) return;
+    state.list.start = id;
+    refreshListViews();
+    toast("출발지를 바꿨어요");
   }
 
   /* ------------------------------------------------------------------
@@ -924,56 +1165,88 @@
     }
   });
 
-  $("listbar").addEventListener("click", openSheet);
+  $("shopBar").addEventListener("click", function () { openSheet("shop"); });
+  $("courseBar").addEventListener("click", function () { openSheet("course"); });
 
-  $("sheet").addEventListener("click", function (e) {
-    if (e.target.closest("[data-close]")) { closeSheet(); return; }
+  ["shopSheet", "courseSheet"].forEach(function (sid) {
+    $(sid).addEventListener("click", function (e) {
+      if (e.target.closest("[data-close]")) { closeSheet(); return; }
 
-    var row = e.target.closest("[data-row]");
-    if (!row) return;
-    var parts = row.getAttribute("data-row").split(":");
-    var group = parts[0];
-    var id = parts[1];
-    var entry = state.list[group] && state.list[group][id];
-    if (!entry) return;
+      var row = e.target.closest("[data-row]");
+      if (!row) return;
+      var parts = row.getAttribute("data-row").split(":");
+      var group = parts[0];
+      var id = parts[1];
+      var entry = state.list[group] && state.list[group][id];
+      if (!entry) return;
 
-    if (e.target.closest("[data-del]")) { removeItem(group, id); return; }
+      if (e.target.closest("[data-del]")) { removeItem(group, id); return; }
 
-    var step = e.target.closest("[data-step]");
-    if (step) {
-      var delta = Number(step.getAttribute("data-step"));
-      entry.qty = Math.max(1, Math.min(99, (entry.qty || 1) + delta));
+      var step = e.target.closest("[data-step]");
+      if (step) {
+        var delta = Number(step.getAttribute("data-step"));
+        entry.qty = Math.max(1, Math.min(99, (entry.qty || 1) + delta));
+        refreshListViews();
+        return;
+      }
+
+      if (e.target.closest("[data-chk]")) {
+        entry.checked = !entry.checked;
+        refreshListViews();
+        return;
+      }
+
+      /* 장소 행을 탭하면 그곳을 출발지(1번)로 */
+      if (group === "travel") setStart(id);
+    });
+  });
+
+  $("routeOpen").addEventListener("click", function () {
+    var course = buildCourse();
+    var url = mapsRouteUrl(course);
+    if (!url) { toast("좌표가 있는 장소가 아직 없어요"); return; }
+    if (course.located > 11) toast("구글 지도는 한 번에 11곳까지예요. 앞 11곳만 열게요");
+    window.open(url, "_blank", "noopener");
+  });
+
+  $("clearShopping").addEventListener("click", function () {
+    var t = shoppingTotals();
+    if (!t.count) { toast("쇼핑 리스트가 비어 있어요"); return; }
+    if (window.confirm("쇼핑 " + t.count + "개를 모두 지울까요?")) {
+      state.list.shopping = {};
       refreshListViews();
-      return;
-    }
-
-    if (e.target.closest("[data-chk]")) {
-      entry.checked = !entry.checked;
-      refreshListViews();
+      toast("쇼핑 리스트를 비웠어요");
     }
   });
 
-  $("clearAll").addEventListener("click", function () {
-    var t = listTotals();
-    if (!t.total) { toast("리스트가 이미 비어 있어요"); return; }
-    if (window.confirm("담은 장소 " + t.travel + "곳, 쇼핑 " + t.shopping + "개를 모두 지울까요?")) {
-      state.list = { travel: {}, shopping: {} };
+  $("clearCourse").addEventListener("click", function () {
+    var n = travelIds().length;
+    if (!n) { toast("여행 코스가 비어 있어요"); return; }
+    if (window.confirm("담은 장소 " + n + "곳을 모두 지울까요?")) {
+      state.list.travel = {};
+      state.list.start = "";
       refreshListViews();
-      toast("리스트를 비웠어요");
+      toast("여행 코스를 비웠어요");
     }
   });
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && $("sheet").classList.contains("open")) closeSheet();
+    if (e.key === "Escape" && openSheetId()) { closeSheet(); return; }
+    var rrow = e.target && e.target.closest ? e.target.closest(".route-row") : null;
+    if (rrow && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      setStart(rrow.getAttribute("data-row").split(":")[1]);
+    }
   });
 
   /* 이 기기의 다른 탭에서 리스트를 바꾸면 화면도 맞춰줍니다 */
   window.addEventListener("storage", function (e) {
     if (e.key === LS_KEY) {
       state.list = loadList();
-      renderBar();
+      renderDock();
       renderGrid();
-      if ($("sheet").classList.contains("open")) renderSheet();
+      if (openSheetId() === "shopSheet") renderShop();
+      else if (openSheetId() === "courseSheet") renderCourse();
     }
   });
 
@@ -984,7 +1257,7 @@
   renderTabs();
   renderPills();
   renderGrid();
-  renderBar();
+  renderDock();
 })();
 </script>
 </body>
