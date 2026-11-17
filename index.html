@@ -81,20 +81,28 @@
 
   /* ---------- 전환 탭 ---------- */
   .tabs {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    display: flex; align-items: stretch; gap: 3px;
     background: #fff; border: 1px solid var(--line);
-    border-radius: 999px; padding: 4px; margin: 16px 0 14px;
+    border-radius: 18px; padding: 4px; margin: 16px 0 14px;
     box-shadow: 0 1px 2px rgba(24, 24, 27, .03);
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab {
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    border: 0; background: transparent; border-radius: 999px;
-    padding: 10px 8px; font-size: 13.5px; font-weight: 700; color: var(--ink-soft);
+    flex: 1 0 auto; min-width: 60px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border: 0; background: transparent; border-radius: 14px;
+    padding: 7px 6px; font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
     transition: background .16s ease, color .16s ease;
-    white-space: nowrap;
+    white-space: nowrap; line-height: 1.15;
   }
+  .tab .ico { font-size: 15px; line-height: 1; }
   .tab[aria-selected="true"] { background: var(--ink); color: #fff; }
-  @media (min-width: 720px) { .tabs { max-width: 420px; } }
+  @media (min-width: 720px) {
+    .tabs { max-width: 480px; }
+    .tab { font-size: 12.5px; }
+  }
   .tab .cnt { font-size: 11.5px; opacity: .6; font-weight: 700; }
 
   /* ---------- 안내 배너 ---------- */
@@ -373,8 +381,11 @@
   </section>
 
   <div class="tabs" role="tablist" aria-label="가이드 종류">
-    <button class="tab" role="tab" id="tabTravel" data-tab="travel" aria-selected="true">🗺️ 여행지·맛집</button>
-    <button class="tab" role="tab" id="tabShopping" data-tab="shopping" aria-selected="false">🛒 쇼핑 리스트</button>
+    <button class="tab" role="tab" id="tabFood" data-tab="food" aria-selected="true"><span class="ico" aria-hidden="true">🍽️</span><span>맛집</span></button>
+    <button class="tab" role="tab" id="tabCafe" data-tab="cafe" aria-selected="false"><span class="ico" aria-hidden="true">☕</span><span>카페</span></button>
+    <button class="tab" role="tab" id="tabSight" data-tab="sight" aria-selected="false"><span class="ico" aria-hidden="true">📷</span><span>관광지</span></button>
+    <button class="tab" role="tab" id="tabHotel" data-tab="hotel" aria-selected="false"><span class="ico" aria-hidden="true">🏨</span><span>호텔</span></button>
+    <button class="tab" role="tab" id="tabShopping" data-tab="shopping" aria-selected="false"><span class="ico" aria-hidden="true">🛒</span><span>쇼핑리스트</span></button>
   </div>
 
   <section class="banner" id="banner" hidden>
@@ -474,8 +485,8 @@
   var SITE_INFO = (typeof SITE === "object" && SITE) ? SITE : {};
 
   var state = {
-    tab: "travel",
-    filter: "전체",           // 여행: 지역 / 쇼핑: 카테고리
+    tab: "food",             // food · cafe · sight · hotel · shopping
+    filter: "전체",           // 장소 탭: 지역 / 쇼핑: 카테고리
     q: "",
     shown: PAGE,
     list: loadList()
@@ -553,18 +564,26 @@
   /* ------------------------------------------------------------------
      3. 현재 탭 데이터 + 검색/필터
      ------------------------------------------------------------------ */
-  function source() { return state.tab === "travel" ? PLACES : SHOPPING; }
+  /* 탭 → PLACES 의 type */
+  var TAB_TYPES = { food: "맛집", cafe: "카페", sight: "명소", hotel: "호텔" };
+  function isPlacesTab() { return state.tab !== "shopping"; }
+
+  function source() {
+    if (!isPlacesTab()) return SHOPPING;
+    var type = TAB_TYPES[state.tab];
+    return PLACES.filter(function (p) { return p.type === type; });
+  }
   function filters() {
-    return state.tab === "travel" ? (typeof REGIONS !== "undefined" ? REGIONS : ["전체"]) : (typeof SHOP_CATEGORIES !== "undefined" ? SHOP_CATEGORIES : ["전체"]);
+    return isPlacesTab() ? (typeof REGIONS !== "undefined" ? REGIONS : ["전체"]) : (typeof SHOP_CATEGORIES !== "undefined" ? SHOP_CATEGORIES : ["전체"]);
   }
   function matchFilter(item) {
     if (state.filter === "전체") return true;
-    return state.tab === "travel" ? item.region === state.filter : item.cat === state.filter;
+    return isPlacesTab() ? item.region === state.filter : item.cat === state.filter;
   }
   function matchQuery(item) {
     var q = state.q.trim().toLowerCase();
     if (!q) return true;
-    var hay = state.tab === "travel"
+    var hay = isPlacesTab()
       ? [item.ko, item.ja, item.tip, item.region, item.type]
       : [item.name, item.ja, item.memo, item.cat];
     for (var i = 0; i < hay.length; i++) {
@@ -579,7 +598,7 @@
     var all = source();
     if (label === "전체") return all.length;
     return all.filter(function (it) {
-      return state.tab === "travel" ? it.region === label : it.cat === label;
+      return isPlacesTab() ? it.region === label : it.cat === label;
     }).length;
   }
 
@@ -618,16 +637,11 @@
     $("pills").innerHTML = html.join("");
   }
 
-  function typeBadge(it) {
-    if (state.tab !== "travel") return "";
-    return '<span class="b" data-type="' + esc(it.type) + '">' + esc(it.type) + "</span>";
-  }
-
   function travelCard(it) {
     var inList = !!state.list.travel[it.id];
     return '' +
       '<article class="card' + (inList ? " in-list" : "") + '" data-card="' + esc(it.id) + '">' +
-        '<div class="badges"><span class="b region">' + esc(it.region) + "</span>" + typeBadge(it) + "</div>" +
+        '<div class="badges"><span class="b region">' + esc(it.region) + "</span></div>" +
         "<h3>" + esc(it.ko) + "</h3>" +
         '<p class="ja">' + esc(it.ja) + "</p>" +
         '<p class="tip">' + esc(it.tip) + "</p>" +
@@ -663,19 +677,19 @@
 
     if (!items.length) {
       grid.innerHTML = '<div class="empty"><b>찾는 항목이 없어요</b>' +
-        (state.q ? "다른 검색어로 찾아보시거나 필터를 ‘전체’로 바꿔 보세요." : "이 지역에 등록된 항목이 아직 없어요.") + "</div>";
+        (state.q ? "다른 검색어로 찾아보시거나 필터를 ‘전체’로 바꿔 보세요." : "이 지역에 등록된 항목이 아직 없어요. 다른 지역을 골라보세요.") + "</div>";
     } else {
       grid.innerHTML = shown.map(function (it) {
-        return state.tab === "travel" ? travelCard(it) : shoppingCard(it);
+        return isPlacesTab() ? travelCard(it) : shoppingCard(it);
       }).join("");
     }
 
-    var unit = state.tab === "travel" ? "곳" : "개 상품";
+    var unit = isPlacesTab() ? "곳" : "개 상품";
     $("resultCount").textContent = "총 " + items.length + unit;
     $("moreWrap").classList.toggle("show", items.length > state.shown);
 
-    var inListCount = Object.keys(state.tab === "travel" ? state.list.travel : state.list.shopping).length;
-    $("listHint").textContent = inListCount ? "담은 " + inListCount + (state.tab === "travel" ? "곳" : "개") : "";
+    var inListCount = Object.keys(isPlacesTab() ? state.list.travel : state.list.shopping).length;
+    $("listHint").textContent = inListCount ? "담은 " + inListCount + (isPlacesTab() ? "곳" : "개") : "";
   }
 
   /* ------------------------------------------------------------------
@@ -701,7 +715,7 @@
   function renderBar() {
     var t = listTotals();
     $("barCount").textContent = String(t.total);
-    $("barSub").textContent = "여행 " + t.travel + " · 쇼핑 " + t.shopping;
+    $("barSub").textContent = "장소 " + t.travel + " · 쇼핑 " + t.shopping;
     $("barTotal").textContent = "약 ¥" + t.amount.toLocaleString("ko-KR");
   }
 
@@ -710,7 +724,7 @@
     return '' +
       '<div class="row' + (row.checked ? " on" : "") + '" data-row="travel:' + esc(id) + '">' +
         '<label class="chk"><input type="checkbox" data-chk="1"' + (row.checked ? " checked" : "") + '><i>✓</i></label>' +
-        '<span class="info"><b>' + esc(row.ko) + "</b><small>" + esc(row.region) + " · " + esc(row.ja) + "</small></span>" +
+        '<span class="info"><b>' + esc(row.ko) + "</b><small>" + esc(row.region) + (row.type ? " · " + esc(row.type) : "") + " · " + esc(row.ja) + "</small></span>" +
         '<button class="del" type="button" data-del="1" aria-label="삭제">✕</button>' +
       "</div>";
   }
@@ -735,16 +749,16 @@
     var shopIds = Object.keys(state.list.shopping);
     var html = "";
 
-    html += '<div class="grp"><div class="grp-head">🗺️ 여행지·맛집 <span>' + travelIds.length + "곳</span></div>";
+    html += '<div class="grp"><div class="grp-head">📍 담은 장소 <span>' + travelIds.length + "곳</span></div>";
     html += travelIds.length
       ? travelIds.map(travelRow).join("")
-      : '<p class="muted-empty">아직 담은 장소가 없어요. 여행 탭에서 ＋ 담기를 눌러보세요.</p>';
+      : '<p class="muted-empty">아직 담은 장소가 없어요. 맛집·카페·관광지·호텔 탭에서 ＋ 담기를 눌러보세요.</p>';
     html += "</div>";
 
     html += '<div class="grp"><div class="grp-head">🛒 쇼핑 리스트 <span>' + shopIds.length + "개</span></div>";
     html += shopIds.length
       ? shopIds.map(shoppingRow).join("")
-      : '<p class="muted-empty">아직 담은 상품이 없어요. 쇼핑 탭에서 ＋ 담기를 눌러보세요.</p>';
+      : '<p class="muted-empty">아직 담은 상품이 없어요. 쇼핑리스트 탭에서 ＋ 담기를 눌러보세요.</p>';
     html += "</div>";
 
     $("sheetBody").innerHTML = html;
@@ -781,7 +795,7 @@
      6. 담기 / 빼기
      ------------------------------------------------------------------ */
   function addItem(id) {
-    if (state.tab === "travel") {
+    if (isPlacesTab()) {
       var place = PLACES.filter(function (p) { return p.id === id; })[0];
       if (!place) return;
       if (state.list.travel[id]) { toast("이미 담겨 있어요"); return; }
@@ -820,8 +834,16 @@
     renderGrid();
   }
 
-  $("tabTravel").addEventListener("click", function () { setTab("travel"); });
-  $("tabShopping").addEventListener("click", function () { setTab("shopping"); });
+  (function bindTabs() {
+    var tabs = document.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].addEventListener("click", function (e) {
+        var btn = e.currentTarget;
+        setTab(btn.getAttribute("data-tab"));
+        if (btn.scrollIntoView) btn.scrollIntoView({ block: "nearest", inline: "center" });
+      });
+    }
+  })();
 
   $("pills").addEventListener("click", function (e) {
     var btn = e.target.closest(".pill");
@@ -915,7 +937,7 @@
   $("clearAll").addEventListener("click", function () {
     var t = listTotals();
     if (!t.total) { toast("리스트가 이미 비어 있어요"); return; }
-    if (window.confirm("담은 여행지 " + t.travel + "곳, 쇼핑 " + t.shopping + "개를 모두 지울까요?")) {
+    if (window.confirm("담은 장소 " + t.travel + "곳, 쇼핑 " + t.shopping + "개를 모두 지울까요?")) {
       state.list = { travel: {}, shopping: {} };
       refreshListViews();
       toast("리스트를 비웠어요");
