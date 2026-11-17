@@ -993,7 +993,7 @@
     var count = travelIds().length;
     var html;
     if (!count) {
-      html = '<p class="muted-empty">아직 담은 장소가 없어요. 맛집·카페·관광지·호텔 탭에서 ＋ 담기를 눌러보세요.</p>';
+      html = '<p class="muted-empty">아직 담은 장소가 없어요. 맛집·카페·관광지·호텔·공항·역 탭에서 ＋ 담기를 눌러보세요.</p>';
     } else {
       html = course.rows.map(function (r, i) { return courseRow(r, i, course); }).join("");
       if (course.located === 1) {
