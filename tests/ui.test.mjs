@@ -285,62 +285,74 @@ $("#clearCourse").click();
 check("코스 비우면 0곳", text("#courseBarTitle") === "여행 코스 0곳" && ls().start === "", text("#courseBarTitle"));
 check("코스 모달 빈 상태", $("#courseBody").textContent.includes("아직 담은 장소가 없어요"));
 
-console.log("\n[12] 장소 카드 썸네일 — 개별 158+37장 유지 · 신규는 카테고리 대표 6종");
-const CAT = ["cat-food", "cat-cafe", "cat-spot", "cat-hotel", "cat-shop", "cat-photo"];
+console.log("\n[12] 장소 카드 썸네일 — 기존 195장 유지 · 신규 2,918곳은 사진 없는 텍스트 카드");
 const isExistingImg = (p) => /^\.[/]images[/]places[/][a-z]+-\d+\.jpg$/.test(p.img);
+const NEW_N = PLACES.length - 195;
+$("#tabFood").click();
+{
+  const all = $('#pills [data-filter="전체"]');
+  if (all && all.getAttribute("aria-pressed") !== "true") all.click();
+}
+await sleep(80);
 check("기존 장소 img = ./images/places/{id}.jpg", PLACES.filter(isExistingImg).every((p) => p.img === `./images/places/${p.id}.jpg`),
   PLACES.filter(isExistingImg).filter((p) => p.img !== `./images/places/${p.id}.jpg`).map((p) => p.id).join(","));
 check("기존 개별 이미지 195장", PLACES.filter(isExistingImg).length === 195, String(PLACES.filter(isExistingImg).length));
-check(`신규 ${PLACES.length - 195}곳은 cat-*.jpg`, PLACES.filter((p) => !isExistingImg(p)).every((p) => p.img === `./images/cat/${CAT.filter((c) => p.img.endsWith(c + ".jpg"))[0]}.jpg`),
-  PLACES.filter((p) => !isExistingImg(p) && !CAT.some((c) => p.img === `./images/cat/${c}.jpg`)).map((p) => p.id).join(","));
+check(`신규 ${NEW_N}곳은 img === ""`, PLACES.filter((p) => !isExistingImg(p)).every((p) => p.img === ""),
+  PLACES.filter((p) => !isExistingImg(p) && p.img !== "").map((p) => `${p.id}:${p.img}`).slice(0, 5).join(","));
+check("카테고리 대표 이미지(cat-*) 참조 0건", PLACES.every((p) => !/cat-/.test(p.img)),
+  PLACES.filter((p) => /cat-/.test(p.img)).map((p) => p.id).slice(0, 5).join(","));
 check("기존 195장 파일 모두 존재(그대로 유지)", PLACES.filter(isExistingImg).every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
   PLACES.filter((p) => isExistingImg(p) && !fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))).map((p) => p.id).join(","));
-check("카테고리 대표 6종 파일 존재", CAT.every((c) => fs.existsSync(path.join(root, "images", "cat", c + ".jpg"))),
-  CAT.filter((c) => !fs.existsSync(path.join(root, "images", "cat", c + ".jpg"))).join(","));
-check("대표 이미지는 400×400 JPEG", (() => {
-  for (const c of CAT) {
-    const buf = fs.readFileSync(path.join(root, "images", "cat", c + ".jpg"));
-    if (buf[0] !== 0xff || buf[1] !== 0xd8) return false;
-    // SOF0~SOF2 마커에서 크기 추출
-    let i = 2, len = 0, h = 0, w = 0, ok = false;
-    while (i < buf.length) {
-      if (buf[i] !== 0xff) { i++; continue; }
-      const m = buf[i + 1];
-      len = (buf[i + 2] << 8) | buf[i + 3];
-      if (m >= 0xc0 && m <= 0xc2) { h = (buf[i + 5] << 8) | buf[i + 6]; w = (buf[i + 7] << 8) | buf[i + 8]; ok = true; break; }
-      i += 2 + len;
-    }
-    if (!ok || w !== 400 || h !== 400) return false;
-  }
-  return true;
-})());
-check("[소품샵] 태그는 cat-shop", PLACES.filter((p) => p.tip.startsWith("[소품샵]")).length > 0 &&
-  PLACES.filter((p) => p.tip.startsWith("[소품샵]")).every((p) => p.img === "./images/cat/cat-shop.jpg"),
-  PLACES.filter((p) => p.tip.startsWith("[소품샵]") && p.img !== "./images/cat/cat-shop.jpg").map((p) => p.id).join(","));
-check("[포토스팟] 태그는 cat-photo", PLACES.filter((p) => p.tip.startsWith("[포토스팟]")).length > 0 &&
-  PLACES.filter((p) => p.tip.startsWith("[포토스팟]")).every((p) => p.img === "./images/cat/cat-photo.jpg"),
-  PLACES.filter((p) => p.tip.startsWith("[포토스팟]") && p.img !== "./images/cat/cat-photo.jpg").map((p) => p.id).join(","));
-check("신규는 타입별 대표 이미지", ["맛집:cat-food", "카페:cat-cafe", "명소:cat-spot", "호텔:cat-hotel"].every((pair) => {
-  const [t, c] = pair.split(":");
-  const list = PLACES.filter((p) => !isExistingImg(p) && p.type === t && !p.tip.startsWith("[소품샵]") && !p.tip.startsWith("[포토스팟]"));
-  return list.length > 0 && list.every((p) => p.img === `./images/cat/${c}.jpg`);
-}));
-for (const [tab, label, type] of [["tabFood", "맛집", "맛집"], ["tabCafe", "카페", "카페"], ["tabSight", "관광지", "명소"], ["tabHotel", "호텔", "호텔"], ["tabTransit", "공항·역", "공항·역"]]) {
+check("images/cat 폴더 정리됨", !fs.existsSync(path.join(root, "images", "cat")));
+
+/* 카드 렌더 — 사진 있는 카드는 썸네일, 없는 카드는 빈 박스 없이 텍스트만 */
+const brokenThumbs = () => [...document.querySelectorAll("#grid img.thumb")].filter((i) => {
+  const src = i.getAttribute("src");
+  return !src || !fs.existsSync(path.join(root, src.replace(/^\.\//, "")));
+});
+for (const [tab, label] of [["tabFood", "맛집"], ["tabCafe", "카페"], ["tabSight", "관광지"], ["tabHotel", "호텔"], ["tabTransit", "공항·역"]]) {
   $("#" + tab).click();
-  const all = $("#pills [data-filter=\"전체\"]");
+  const all = $('#pills [data-filter="전체"]');
   if (all && all.getAttribute("aria-pressed") !== "true") all.click();
-  await sleep(60);
+  await sleep(80);
   const list = [...cards()];
-  const imgs = list.map((c) => c.querySelector("img.thumb"));
-  check(`${label} 탭 카드마다 썸네일`, list.length > 0 && imgs.every((i) => i !== null), `카드 ${list.length}장`);
-  check(`${label} 썸네일 src = 데이터의 img`, list.every((c, i) => imgs[i] && imgs[i].getAttribute("src") === byId(c.getAttribute("data-card")).img),
-    (imgs[0] || {}).getAttribute && imgs[0].getAttribute("src"));
-  check(`${label} 썸네일 alt 에 장소명`, imgs[0] && imgs[0].getAttribute("alt").length > 4, String(imgs[0] && imgs[0].getAttribute("alt")));
+  const withImg = list.filter((c) => byId(c.getAttribute("data-card")).img);
+  const noImg = list.filter((c) => !byId(c.getAttribute("data-card")).img);
+  check(`${label} 탭 — 사진 있는 카드에만 썸네일`, list.length > 0 && withImg.every((c) => {
+    const i = c.querySelector("img.thumb");
+    return i && i.getAttribute("src") === byId(c.getAttribute("data-card")).img && !c.classList.contains("no-img");
+  }), `카드 ${list.length}장 · 사진 ${withImg.length}장`);
+  check(`${label} 탭 — 사진 없는 카드는 img 없이 텍스트 카드`, noImg.every((c) => c.querySelector("img") === null && c.classList.contains("no-img")),
+    `사진 없는 카드 ${noImg.length}장`);
+  check(`${label} 탭 — 깨진·빈 이미지 0건`, brokenThumbs().length === 0, brokenThumbs().map((i) => i.getAttribute("src")).join(","));
+}
+$("#tabFood").click();
+await sleep(80);
+{
+  const textCard = [...cards()].find((c) => !byId(c.getAttribute("data-card")).img);
+  check("맛집 첫 페이지에 신규 텍스트 카드 있음", !!textCard, `카드 ${cards().length}장`);
+  if (textCard) {
+    const p = byId(textCard.getAttribute("data-card"));
+    check("텍스트 카드 — 지역 뱃지", (textCard.querySelector(".badges .b.region") || {}).textContent === p.region);
+    check("텍스트 카드 — 제목", (textCard.querySelector("h3") || {}).textContent === p.ko, p.ko);
+    check("텍스트 카드 — 일본어 부제는 제목과 다를 때만", (p.ja !== p.ko) === !!textCard.querySelector("p.ja"), `${p.ja} / ${p.ko}`);
+    check("텍스트 카드 — 팁 줄", (textCard.querySelector("p.tip") || {}).textContent === p.tip);
+    check("텍스트 카드 — 버튼 3개(일본어 복사·지도 열기·담기)", textCard.querySelectorAll(".acts .btn").length === 3,
+      String(textCard.querySelectorAll(".acts .btn").length));
+    check("텍스트 카드 — 이미지 요소 없음", textCard.querySelector("img") === null);
+  }
+  check("텍스트 카드 CSS(.card.no-img) 적용", /\.card\.no-img\s*\{[^}]*gap:\s*0/.test(html.replace(/\s+/g, " ")));
+  check("텍스트 카드 — 상단 구분선으로 여백 정리", /\.card\.no-img \.shop-head\s*\{[^}]*border-bottom:\s*1px/.test(html.replace(/\s+/g, " ")));
 }
 check("썸네일 72×72 · lazy · async", (() => {
-  const i = $("[data-card] img.thumb");
+  const i = $("#grid [data-card] img.thumb");
   return i && i.getAttribute("width") === "72" && i.getAttribute("height") === "72" &&
     i.getAttribute("loading") === "lazy" && i.getAttribute("decoding") === "async" && i.classList.contains("thumb");
+})());
+check("썸네일 alt 에 장소명", (() => {
+  const c = [...cards()].find((x) => x.querySelector("img.thumb"));
+  const i = c && c.querySelector("img.thumb");
+  return i && i.getAttribute("alt").length > 4;
 })());
 check("썸네일 CSS(72px·12px 라운드·cover)", /\.thumb\s*\{[^}]*width:\s*72px[^}]*border-radius:\s*12px[^}]*object-fit:\s*cover/.test(html.replace(/\s+/g, " ")),
   (html.match(/\.thumb[^}]*\}/) || [""])[0].slice(0, 80));
@@ -406,7 +418,7 @@ check("공항 출발 구글 지도 루트 URL", /^https:\/\/www\.google\.com\/ma
     `${origin} vs ${byId("tr-01").lat},${byId("tr-01").lng}`);
 }
 
-console.log("\n[13-1] 신규 장소(카테고리 대표 이미지) — 코스 담기 · 최단 동선 · 루트");
+console.log("\n[13-1] 신규 장소(사진 없음) — 텍스트 카드 · 코스 담기 · 최단 동선 · 루트");
 while (courseRows().length) courseRows()[0].querySelector(".del").click();
 document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 $("#tabFood").click();
@@ -414,20 +426,20 @@ const allPill = $('#pills [data-filter="전체"]');
 if (allPill && allPill.getAttribute("aria-pressed") !== "true") allPill.click();
 await sleep(80);
 {
-  const catCards = [...cards()].filter((c) => byId(c.getAttribute("data-card")).img === "./images/cat/cat-food.jpg");
-  check("맛집 첫 페이지에 신규 장소(대표 이미지) 카드 있음", catCards.length > 0, `카드 ${cards().length}장 중 ${catCards.length}장`);
-  const first = catCards[0];
+  const textCards = [...cards()].filter((c) => !byId(c.getAttribute("data-card")).img);
+  check("맛집 첫 페이지에 신규 장소(텍스트 카드) 있음", textCards.length > 0, `카드 ${cards().length}장 중 ${textCards.length}장`);
+  const first = textCards[0];
   const firstId = first.getAttribute("data-card");
-  check("신규 카드 썸네일 = ./images/cat/cat-food.jpg", first.querySelector("img.thumb").getAttribute("src") === "./images/cat/cat-food.jpg",
-    first.querySelector("img.thumb").getAttribute("src"));
+  check("신규 카드는 img 태그 없는 텍스트 카드", first.querySelector("img") === null && first.classList.contains("no-img"));
   check("신규 카드도 일본어 복사 버튼·지도 링크 존재", first.querySelector('[data-act="copy"]') !== null && first.querySelector("a.btn") !== null);
-  const secondId = catCards[1] ? catCards[1].getAttribute("data-card") : null;
+  const secondId = textCards[1] ? textCards[1].getAttribute("data-card") : null;
   first.querySelector('[data-act="add"]').click();
   if (secondId) document.querySelector(`[data-card="${secondId}"] [data-act="add"]`).click();
   check("신규 장소 담기 → 코스에 저장", text("#courseBarTitle") === `여행 코스 ${secondId ? 2 : 1}곳`, text("#courseBarTitle"));
   check("신규 장소 좌표도 저장", typeof ls().travel[firstId].lat === "number" && Math.abs(ls().travel[firstId].lat - byId(firstId).lat) < 1e-9);
   $("#courseBar").click();
   check("코스 모달에 신규 장소 표시", $("#courseBody").textContent.includes(byId(firstId).ko), byId(firstId).ko);
+  check("코스 모달에도 깨진 이미지 없음", document.querySelectorAll("#courseBody img").length === 0);
   if (secondId) {
     check("신규 2곳 최단 동선 계산", num(text("#courseTotal")) > 0 && /^약 [\d.]+km$/.test(text("#courseTotal")), text("#courseTotal"));
     const opt = bestPath(firstId, [firstId, secondId]);
@@ -449,13 +461,13 @@ await sleep(80);
   qq.dispatchEvent(new window.Event("input", { bubbles: true }));
   await sleep(200);
   const list = [...cards()];
-  check("[소품샵] 검색 결과는 cat-shop 썸네일", list.length > 0 && list.every((c) => c.querySelector("img.thumb").getAttribute("src") === "./images/cat/cat-shop.jpg"),
+  check("[소품샵] 검색 결과도 사진 없는 텍스트 카드", list.length > 0 && list.every((c) => c.querySelector("img") === null && c.classList.contains("no-img")),
     `카드 ${list.length}장`);
   qq.value = "[포토스팟]";
   qq.dispatchEvent(new window.Event("input", { bubbles: true }));
   await sleep(200);
   const list2 = [...cards()];
-  check("[포토스팟] 검색 결과는 cat-photo 썸네일", list2.length > 0 && list2.every((c) => c.querySelector("img.thumb").getAttribute("src") === "./images/cat/cat-photo.jpg"),
+  check("[포토스팟] 검색 결과도 사진 없는 텍스트 카드", list2.length > 0 && list2.every((c) => c.querySelector("img") === null && c.classList.contains("no-img")),
     `카드 ${list2.length}장`);
   $("#clearQ").click();
   await sleep(80);
