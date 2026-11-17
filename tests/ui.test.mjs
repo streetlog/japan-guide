@@ -261,9 +261,9 @@ check("코스 모달 빈 상태", $("#courseBody").textContent.includes("아직 
 console.log("\n[12] 장소 카드 썸네일");
 check("모든 장소에 img 필드(상대 경로)", PLACES.every((p) => p.img === `./images/places/${p.id}.jpg`),
   PLACES.filter((p) => p.img !== `./images/places/${p.id}.jpg`).map((p) => p.id).join(","));
-check("장소 이미지 158장 모두 파일 존재", PLACES.every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
+check("장소 이미지 " + PLACES.length + "장 모두 파일 존재", PLACES.every((p) => fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))),
   PLACES.filter((p) => !fs.existsSync(path.join(root, "images", "places", p.id + ".jpg"))).map((p) => p.id).join(","));
-for (const [tab, label, type] of [["tabFood", "맛집", "맛집"], ["tabCafe", "카페", "카페"], ["tabSight", "관광지", "명소"], ["tabHotel", "호텔", "호텔"]]) {
+for (const [tab, label, type] of [["tabFood", "맛집", "맛집"], ["tabCafe", "카페", "카페"], ["tabSight", "관광지", "명소"], ["tabHotel", "호텔", "호텔"], ["tabTransit", "공항·역", "공항·역"]]) {
   $("#" + tab).click();
   const all = $("#pills [data-filter=\"전체\"]");
   if (all && all.getAttribute("aria-pressed") !== "true") all.click();
@@ -283,7 +283,68 @@ check("썸네일 72×72 · lazy · async", (() => {
 check("썸네일 CSS(72px·12px 라운드·cover)", /\.thumb\s*\{[^}]*width:\s*72px[^}]*border-radius:\s*12px[^}]*object-fit:\s*cover/.test(html.replace(/\s+/g, " ")),
   (html.match(/\.thumb[^}]*\}/) || [""])[0].slice(0, 80));
 
-console.log("\n[13] 콘솔 오류");
+console.log("\n[13] 공항·역 탭 — 10개 지역 · 담기 · 코스 연동");
+const TRANSIT = PLACES.filter((p) => p.type === "공항·역");
+check("탭 6개", document.querySelectorAll(".tab").length === 6, String(document.querySelectorAll(".tab").length));
+check("탭 순서 맛집·카페·관광지·호텔·공항·역·쇼핑리스트",
+  [...document.querySelectorAll(".tab")].map((b) => b.getAttribute("data-tab")).join(",") === "food,cafe,sight,hotel,transit,shopping",
+  [...document.querySelectorAll(".tab")].map((b) => b.getAttribute("data-tab")).join(","));
+check("✈️ 공항·역 탭 버튼", $("#tabTransit") !== null && $("#tabTransit").textContent.includes("공항·역") && $("#tabTransit").textContent.includes("✈️"));
+$("#tabTransit").click();
+await sleep(80);
+check("공항·역 탭 선택 표시", $("#tabTransit").getAttribute("aria-selected") === "true");
+check(`공항·역 ${TRANSIT.length}곳`, text("#resultCount") === `총 ${TRANSIT.length}곳`, text("#resultCount"));
+check("배너는 공항·역 탭에서 숨김", $("#banner").hidden === true);
+check(`지역 필터 ${REGIONS.length}개 유지`, document.querySelectorAll("#pills .pill").length === REGIONS.length,
+  String(document.querySelectorAll("#pills .pill").length));
+for (const region of REGIONS.slice(1)) {
+  const n = TRANSIT.filter((p) => p.region === region).length;
+  check(`${region} 공항·역 ${n}곳`, n > 0 && text("#pills").includes(region + n), text("#pills").replace(/\s+/g, " "));
+}
+$('#pills [data-filter="도쿄"]').click();
+await sleep(80);
+check("도쿄 공항·역 6곳", text("#resultCount") === "총 6곳", text("#resultCount"));
+check("공항·역 카드 썸네일", cards().length === 6 && [...cards()].every((c) => c.querySelector("img.thumb")), `카드 ${cards().length}장`);
+check("공항·역 카드 일본어명", $('[data-card="tr-01"]').textContent.includes("成田国際空港"));
+{
+  const qq = $("#q");
+  qq.value = "하네다";
+  qq.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await sleep(200);
+  check("공항·역 탭 검색('하네다')", cards().length === 1 && cards()[0].getAttribute("data-card") === "tr-02", String(cards().length));
+  $("#clearQ").click();
+  await sleep(80);
+}
+$('[data-card="tr-01"] [data-act="add"]').click();
+check("공항을 담으면 여행 코스 1곳", text("#courseBarTitle") === "여행 코스 1곳", text("#courseBarTitle"));
+check("공항 좌표가 코스에 저장", typeof ls().travel["tr-01"].lat === "number" && Math.abs(ls().travel["tr-01"].lat - byId("tr-01").lat) < 1e-9,
+  JSON.stringify(ls().travel["tr-01"]));
+$('[data-card="tr-05"] [data-act="add"]').click();
+$("#tabSight").click();
+await sleep(80);
+$('#pills [data-filter="도쿄"]').click();
+await sleep(80);
+$('[data-card="ty-10"] [data-act="add"]').click();
+check("공항·역 + 관광지 3곳", text("#courseBarTitle") === "여행 코스 3곳", text("#courseBarTitle"));
+$("#courseBar").click();
+check("코스 모달 3행", courseRows().length === 3, String(courseRows().length));
+check("1번 = 공항(출발지)", routeOrder()[0] === "tr-01" && courseRows()[0].classList.contains("start"), routeOrder().join(","));
+{
+  const opt = bestPath("tr-01", ["tr-01", "tr-05", "ty-10"]);
+  check("공항 출발 최단 동선 = 완전탐색 최소", Math.abs(num(text("#courseTotal")) - opt.total) < 0.15,
+    `${text("#courseTotal")} vs 최적 ${opt.total.toFixed(1)}km`);
+  check("공항↔시내 거리 반영", num(text("#courseTotal")) > 20, text("#courseTotal"));
+}
+$("#routeOpen").click();
+check("공항 출발 구글 지도 루트 URL", /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&origin=[\d.]+,[\d.]+&destination=[\d.]+,[\d.]+/.test(opened || ""), String(opened));
+{
+  const u = new URL(opened);
+  const origin = u.searchParams.get("origin").split(",").map(Number);
+  check("origin = 나리타 공항 좌표", Math.abs(origin[0] - byId("tr-01").lat) < 1e-4 && Math.abs(origin[1] - byId("tr-01").lng) < 1e-4,
+    `${origin} vs ${byId("tr-01").lat},${byId("tr-01").lng}`);
+}
+
+console.log("\n[14] 콘솔 오류");
 check("자바스크립트 오류 없음", errors.length === 0, errors.join(" | "));
 
 console.log(`\n결과: ${pass} 통과 / ${fails.length} 실패`);

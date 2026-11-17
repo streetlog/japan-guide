@@ -90,7 +90,7 @@
   }
   .tabs::-webkit-scrollbar { display: none; }
   .tab {
-    flex: 1 0 auto; min-width: 60px;
+    flex: 1 0 auto; min-width: 54px;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
     border: 0; background: transparent; border-radius: 14px;
     padding: 7px 6px; font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
@@ -439,6 +439,7 @@
     <button class="tab" role="tab" id="tabCafe" data-tab="cafe" aria-selected="false"><span class="ico" aria-hidden="true">☕</span><span>카페</span></button>
     <button class="tab" role="tab" id="tabSight" data-tab="sight" aria-selected="false"><span class="ico" aria-hidden="true">📷</span><span>관광지</span></button>
     <button class="tab" role="tab" id="tabHotel" data-tab="hotel" aria-selected="false"><span class="ico" aria-hidden="true">🏨</span><span>호텔</span></button>
+    <button class="tab" role="tab" id="tabTransit" data-tab="transit" aria-selected="false"><span class="ico" aria-hidden="true">✈️</span><span>공항·역</span></button>
     <button class="tab" role="tab" id="tabShopping" data-tab="shopping" aria-selected="false"><span class="ico" aria-hidden="true">🛒</span><span>쇼핑리스트</span></button>
   </div>
 
@@ -567,7 +568,7 @@
   var SITE_INFO = (typeof SITE === "object" && SITE) ? SITE : {};
 
   var state = {
-    tab: "food",             // food · cafe · sight · hotel · shopping
+    tab: "food",             // food · cafe · sight · hotel · transit · shopping
     filter: "전체",           // 장소 탭: 지역 / 쇼핑: 카테고리
     q: "",
     shown: PAGE,
@@ -773,7 +774,7 @@
      3. 현재 탭 데이터 + 검색/필터
      ------------------------------------------------------------------ */
   /* 탭 → PLACES 의 type */
-  var TAB_TYPES = { food: "맛집", cafe: "카페", sight: "명소", hotel: "호텔" };
+  var TAB_TYPES = { food: "맛집", cafe: "카페", sight: "명소", hotel: "호텔", transit: "공항·역" };
   function isPlacesTab() { return state.tab !== "shopping"; }
 
   function source() {
