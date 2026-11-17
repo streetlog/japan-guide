@@ -203,6 +203,13 @@
     margin: 1px 0 0; font-size: 15px; font-weight: 800; letter-spacing: -.01em;
   }
   .card .tip { margin: 1px 0 0; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  /* 쇼핑 카드 썸네일 */
+  .shop-head { display: flex; gap: 11px; align-items: flex-start; }
+  .shop-head-txt { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .thumb {
+    flex: 0 0 72px; width: 72px; height: 72px; border-radius: 12px;
+    object-fit: cover; background: #f6f3ec; border: 1px solid var(--line);
+  }
   .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 9px; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 4px;
@@ -661,11 +668,18 @@
 
   function shoppingCard(it) {
     var inList = !!state.list.shopping[it.id];
+    var thumb = it.img
+      ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.name) + ' 제품 이미지" width="72" height="72" loading="lazy" decoding="async">'
+      : "";
     return '' +
       '<article class="card' + (inList ? " in-list" : "") + '" data-card="' + esc(it.id) + '">' +
-        '<div class="badges"><span class="b">' + esc(it.cat) + "</span></div>" +
-        "<h3>" + esc(it.name) + "</h3>" +
-        '<p class="ja">' + esc(it.ja) + "</p>" +
+        '<div class="shop-head">' + thumb +
+          '<div class="shop-head-txt">' +
+            '<div class="badges"><span class="b">' + esc(it.cat) + "</span></div>" +
+            "<h3>" + esc(it.name) + "</h3>" +
+            '<p class="ja">' + esc(it.ja) + "</p>" +
+          "</div>" +
+        "</div>" +
         '<p class="price">' + yen(it.price) + "</p>" +
         '<p class="tip">' + esc(it.memo) + "</p>" +
         '<div class="acts">' +
