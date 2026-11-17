@@ -1158,5 +1158,5 @@ const SHOPPING = [
   { id: "sp-11", cat: "식품", name: "이치란 라멘 밀키트 (5식)", ja: "一蘭ラーメン 博多細麺ストレート 5食入", price: 2300,
     memo: "집에서 끓이는 돈코츠. 공식몰 기준 5식입 2,300엔", img: "./images/shop/sp-11.jpg" },
   { id: "sp-12", cat: "식품", name: "도코데모 멘타이코", ja: "ふくや どこでも明太子", price: 1296,
-    memo: "밥에 바로 비벼 먹는 명란. 냉장 보관이라 마지막 날 구매", img: "./images/shop/sp-12.jpg" },
+    memo: "밥에 짜서 먹는 스틱형 명란. 상온 180일 보관이라 여행 중 언제든 구매", img: "./images/shop/sp-12.jpg" },
 ];
