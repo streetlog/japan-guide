@@ -344,6 +344,14 @@ await sleep(80);
   check("텍스트 카드 CSS(.card.no-img) 적용", /\.card\.no-img\s*\{[^}]*gap:\s*0/.test(html.replace(/\s+/g, " ")));
   check("텍스트 카드 — 상단 구분선으로 여백 정리", /\.card\.no-img \.shop-head\s*\{[^}]*border-bottom:\s*1px/.test(html.replace(/\s+/g, " ")));
 }
+/* 이미지 로드 실패 시에도 깨진 아이콘 대신 텍스트 카드 */
+check("이미지 로드 실패 시 텍스트 카드로 전환", (() => {
+  const c = [...cards()].find((x) => x.querySelector("img.thumb"));
+  if (!c) return false;
+  const i = c.querySelector("img.thumb");
+  new Function(i.getAttribute("onerror")).call(i);
+  return c.classList.contains("no-img") && c.querySelector("img.thumb") === null;
+})());
 check("썸네일 72×72 · lazy · async", (() => {
   const i = $("#grid [data-card] img.thumb");
   return i && i.getAttribute("width") === "72" && i.getAttribute("height") === "72" &&

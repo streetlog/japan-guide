@@ -859,7 +859,7 @@
     var inList = !!state.list.travel[it.id];
     /* 이미지가 없으면 빈 자리 없이 텍스트 카드, 로드 실패해도 깨진 아이콘 대신 텍스트 카드 */
     var thumb = it.img
-      ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.ko) + ' 장소 이미지" width="72" height="72" loading="lazy" decoding="async" onerror="this.remove();this.closest(\'.card\').classList.add(\'no-img\')">'
+      ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.ko) + ' 장소 이미지" width="72" height="72" loading="lazy" decoding="async" onerror="this.closest(\'.card\').classList.add(\'no-img\');this.remove()">'
       : "";
     /* 한국어 이름이 없는 곳은 제목과 일본어명이 같아서 부제를 숨깁니다 */
     var ja = (it.ja && it.ja !== it.ko) ? '<p class="ja">' + esc(it.ja) + "</p>" : "";
@@ -885,7 +885,7 @@
   function shoppingCard(it) {
     var inList = !!state.list.shopping[it.id];
     var thumb = it.img
-      ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.name) + ' 제품 이미지" width="72" height="72" loading="lazy" decoding="async" onerror="this.remove();this.closest(\'.card\').classList.add(\'no-img\')">'
+      ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.name) + ' 제품 이미지" width="72" height="72" loading="lazy" decoding="async" onerror="this.closest(\'.card\').classList.add(\'no-img\');this.remove()">'
       : "";
     return '' +
       '<article class="card' + (inList ? " in-list" : "") + (it.img ? "" : " no-img") + '" data-card="' + esc(it.id) + '">' +
