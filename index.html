@@ -884,6 +884,8 @@
 
   function shoppingCard(it) {
     var inList = !!state.list.shopping[it.id];
+    /* 일본어 상품명을 확인하지 못한 항목은 빈 줄 없이 이름만 표시 */
+    var jaLine = (it.ja && it.ja !== it.name) ? '<p class="ja">' + esc(it.ja) + "</p>" : "";
     var thumb = it.img
       ? '<img class="thumb" src="' + esc(it.img) + '" alt="' + esc(it.name) + ' 제품 이미지" width="72" height="72" loading="lazy" decoding="async" onerror="this.closest(\'.card\').classList.add(\'no-img\');this.remove()">'
       : "";
@@ -893,7 +895,7 @@
           '<div class="shop-head-txt">' +
             '<div class="badges"><span class="b">' + esc(it.cat) + "</span></div>" +
             "<h3>" + esc(it.name) + "</h3>" +
-            '<p class="ja">' + esc(it.ja) + "</p>" +
+            jaLine +
           "</div>" +
         "</div>" +
         '<p class="price">' + yen(it.price) + "</p>" +

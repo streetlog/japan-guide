@@ -174,7 +174,7 @@ check("버튼 피드백 '복사됨'", $('[data-card="ty-01"] [data-act="copy"]')
 console.log("\n[6] 쇼핑 탭 + 합계");
 $("#tabShopping").click();
 check("쇼핑 카드 12개", cards().length === 12, `실제 ${cards().length}`);
-check("상품 수 표기", text("#resultCount") === "총 12개 상품", text("#resultCount"));
+check("상품 수 표기", text("#resultCount") === `총 ${SHOPPING.length}개 상품`, text("#resultCount"));
 check("배너 표시", $("#banner").hidden === false);
 $('[data-card="sp-01"] [data-act="add"]').click();
 check("쇼핑 담으면 쇼핑 1개 · 여행 코스는 1곳 그대로", text("#shopBarTitle") === "쇼핑 1개" && text("#courseBarTitle") === "여행 코스 1곳",

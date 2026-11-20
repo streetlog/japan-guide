@@ -22,7 +22,7 @@
 streetlog-japan-guide-open/
 ├─ index.html      ← 화면 (CSS·JS 내장, 수정 거의 불필요)
 ├─ data.js         ← ★ 내용 수정은 여기서만 (장소·쇼핑 아이템·문구)
-├─ images/shop/    ← 쇼핑 상품 썸네일 sp-01.jpg ~ sp-12.jpg (400×400 JPEG)
+├─ images/shop/    ← 쇼핑 상품 썸네일 sp-01.jpg ~ sp-136.jpg (400×400 JPEG)
 ├─ images/places/  ← 장소 썸네일 {id}.jpg 495장 (기존 195 + 인기 300, 400×400 JPEG, 맛집·카페·관광지·호텔·공항·역)
 └─ tests/
    └─ ui.test.mjs  ← 동작 자동 점검 (선택)
@@ -51,12 +51,12 @@ streetlog-japan-guide-open/
 **쇼핑 아이템 추가** — `SHOPPING` 배열 맨 아래에 한 줄:
 
 ```js
-{ id: "sp-13", cat: "과자·간식", name: "상품명", ja: "商品名", price: 500, memo: "한 줄 메모" },
+{ id: "sp-137", cat: "과자·간식", name: "상품명", ja: "商品名", price: 500, memo: "한 줄 메모" },
 ```
 
 - `price` : 엔(¥) 숫자만. 모르면 `null` → "현지 가격 확인" 으로 표시
 - `cat` : `"의약품·건강"` / `"화장품·뷰티"` / `"과자·간식"` / `"식품"` / `"생활용품"`
-- `img` : 카드 썸네일 경로. `"./images/shop/sp-13.jpg"` 처럼 넣고 같은 이름의 400×400 JPEG 을 `images/shop/` 에 두면 카드 왼쪽에 72×72 로 표시됩니다. 없으면 썸네일 없이 나옵니다.
+- `img` : 카드 썸네일 경로. `"./images/shop/sp-137.jpg"` 처럼 넣고 같은 이름의 400×400 JPEG 을 `images/shop/` 에 두면 카드 왼쪽에 72×72 로 표시됩니다. 없으면 썸네일 없이 나옵니다.
 
 **문구·링크** — `SITE` 안에서 인스타 주소, 상단 배너(면세·할인 팁), 하단 안내 문구를 바꿉니다.
 
