@@ -638,7 +638,7 @@
   }
   function yen(n) {
     var num = Number(n);
-    if (!isFinite(num)) return "현지 가격 확인";
+    if (n === null || n === undefined || !isFinite(num)) return "현지 가격 확인";
     return "약 ¥" + num.toLocaleString("ko-KR");
   }
   function mapsUrl(q) {

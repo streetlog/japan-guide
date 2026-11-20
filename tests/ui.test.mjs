@@ -184,6 +184,20 @@ $('[data-card="sp-01"] [data-act="add"]').click();
 check("같은 상품 재담기 = 수량 2", ls().shopping["sp-01"].qty === 2);
 check("수량 반영 약 ¥2,376", text("#shopBarSub") === "약 ¥2,376", text("#shopBarSub"));
 
+// 신규 124종 — 가격 미확인 항목은 "현지 가격 확인", 일본어명 없는 항목은 이름만
+while (!$("#moreBtn").hidden && $("[data-card='sp-136']") === null) {
+  const btn = $("#moreBtn");
+  if (btn.hidden) break;
+  btn.click();
+  await sleep(40);
+}
+check("신규 항목까지 목록 로드", cards().length === SHOPPING.length, `실제 ${cards().length}`);
+const sprice = (id) => { const c = document.querySelector(`[data-card="${id}"] .price`); return c ? c.textContent.trim() : "(카드 없음)"; };
+check("가격 미확인 → 현지 가격 확인", sprice("sp-13") === "현지 가격 확인", sprice("sp-13"));
+check("가격 있는 신규 항목 → 약 ¥2,800", sprice("sp-125") === "약 ¥2,800", sprice("sp-125"));
+const noja = document.querySelector('[data-card="sp-41"]');
+check("일본어명 없는 항목은 빈 줄 없이 이름만", !!noja && noja.querySelector("p.ja") === null, noja ? "ja 있음" : "카드 없음");
+
 console.log("\n[7] 쇼핑 모달 (쇼핑 전용)");
 $("#shopBar").click();
 check("쇼핑 모달 열림", $("#shopSheet").classList.contains("open") && $("#shopSheet").hidden === false);
